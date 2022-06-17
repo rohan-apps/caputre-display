@@ -39,8 +39,7 @@
 
 #include "buffers.h"
 
-struct bo
-{
+struct bo {
 	int fd;
 	void *ptr;
 	size_t size;

@@ -104,6 +104,8 @@ static const struct format_name mlc_format_name[] = {
 	{ mlc_yuvfmt_yuyv     , "YUYV"     },
 };
 
+static const char *hw_format_name(unsigned int format, int bpp);
+
 static void print_mlc_rgb(int device, int layer, struct mlcrgblayer *r)
 {
         struct mlc_reg reg;
@@ -113,7 +115,7 @@ static void print_mlc_rgb(int device, int layer, struct mlcrgblayer *r)
                 r = &reg.rgb[layer];
         }
 
-        fprintf(stdout, "MLC.%d RGB.%d\n", device, layer);
+        fprintf(stdout, "MLC.%d - RGB.%d\n", device, layer);
         fprintf(stdout, " leftright                : 0x%08x\n", r->mlcleftright);
         fprintf(stdout, " topbottom                : 0x%08x\n", r->mlctopbottom);
         fprintf(stdout, " invalidleftright0        : 0x%08x\n", r->mlcinvalidleftright0);
@@ -137,7 +139,7 @@ static void print_mlc_yuv(int device, struct mlcyuvlayer *r)
                 r = &reg.yuv;
         }
 
-        fprintf(stdout, "MLC.%d VIDEO\n", device);
+        fprintf(stdout, "MLC.%d - YUV\n", device);
         fprintf(stdout, " leftright                : 0x%08x\n", r->mlcleftright);
         fprintf(stdout, " topbottom                : 0x%08x\n", r->mlctopbottom);
         fprintf(stdout, " control                  : 0x%08x\n", r->mlccontrol);
@@ -170,9 +172,9 @@ static void print_mlc(int device, struct mlc_reg *r)
         }
 
         fprintf(stdout, "MLC.%d\n", device);
-        fprintf(stdout, "controlt                  : 0x%08x\n", r->mlccontrolt);
-        fprintf(stdout, "screensize                : 0x%08x\n", r->mlcscreensize);
-        fprintf(stdout, "bgcolor                   : 0x%08x\n", r->mlcbgcolor);
+        fprintf(stdout, " controlt                 : 0x%08x\n", r->mlccontrolt);
+        fprintf(stdout, " screensize               : 0x%08x\n", r->mlcscreensize);
+        fprintf(stdout, " bgcolor                  : 0x%08x\n", r->mlcbgcolor);
 
         for (i = 0; i < 2; i++)
                 print_mlc_rgb(device, i, &r->rgb[i]);
@@ -188,79 +190,85 @@ static void print_mlc(int device, struct mlc_reg *r)
         fprintf(stdout, " yuvlayergammatable_red   : 0x%08x\n", r->yuvlayergammatable_red);
         fprintf(stdout, " yuvlayergammatable_green : 0x%08x\n", r->yuvlayergammatable_green);
         fprintf(stdout, " yuvlayergammatable_blue  : 0x%08x\n", r->yuvlayergammatable_blue);
-}
+        fprintf(stdout, "\n\n");
+        fprintf(stdout, "TOP\n");
+        fprintf(stdout, " pwr:%-3s, prior:%d, mlc:%-3s, field:%-3s\n",
+                        _getbits(r->mlccontrolt, 10, 2) == 0x3 ? "ON" : "OFF",
+                        _getbits(r->mlccontrolt,  8, 2),
+                        _getbits(r->mlccontrolt,  1, 1) ? "ON" : "OFF",
+                        _getbits(r->mlccontrolt,  0, 1) ? "interalace" : "progressive"); 
+        fprintf(stdout, " screen:%dx%d, bgcolor:0x%x\n",
+                        _getbits(r->mlcscreensize,  0, 12),
+                        _getbits(r->mlcscreensize, 16, 12),
+                        _getbits(r->mlcbgcolor, 0, 24));
 
-static void dump_mlc_rgb(int device, int layer)
-{
-        struct mlc_reg reg;
-        unsigned int *addr, *base;
-        unsigned int offset = 0;
-        int i;
-
-        hw_mlc_dump(device, &reg);
-
-        addr = (unsigned int *)&reg.rgb[layer];
-        base = (unsigned int *)hw_mlc_get_base(device) +
-                ((unsigned int)&reg.rgb[layer] - (unsigned int)&reg);
-
-        offset = (unsigned int)base % 16;
-        base = base - offset;
-        addr = addr - offset;
-
-        fprintf(stdout, "MLC.%d RGB.%d\n", device, layer);
-        for (i = 0; i < (int)sizeof(struct mlcrgblayer)/4; i++) {
-                if (!(i % 4))
-	                fprintf(stdout, "\n0x%08x: ", base);
-                fprintf(stdout, "0x%08x ", *(unsigned int*)addr);
-                base++, addr++;
+        for (i = 0; i < 2; i++) {
+        fprintf(stdout, "RGB.%d\n", i);
+        fprintf(stdout, " %-3s, %d x %d (l:%d, t:%d, r:%d, b:%d), stride:%d/%d, %dbpp, %s(0x%x)\n",
+                        _getbits(r->rgb[i].mlccontrol, 5, 1) ? "ON" : "OFF",
+                        _getbits(r->rgb[i].mlcleftright,  0, 11) - _getbits(r->rgb[i].mlcleftright, 16, 11) + 1,
+                        _getbits(r->rgb[i].mlctopbottom,  0, 11) - _getbits(r->rgb[i].mlctopbottom, 16, 11) + 1,
+                        _getbits(r->rgb[i].mlcleftright, 16, 11),
+                        _getbits(r->rgb[i].mlctopbottom, 16, 11),
+                        _getbits(r->rgb[i].mlcleftright,  0, 11),
+                        _getbits(r->rgb[i].mlctopbottom,  0, 11),
+                        r->rgb[i].mlchstride, r->rgb[i].mlcvstride,
+                        r->rgb[i].mlchstride * 8,
+                        hw_format_name(r->rgb[i].mlccontrol & _maskbit(16, 16), r->rgb[i].mlchstride * 8),
+                        r->rgb[i].mlccontrol & _maskbit(16, 16));
+        fprintf(stdout, " blend:%-3s, invcolor:%-3s, tpcolor:%-3s\n",
+                        _getbits(r->rgb[i].mlccontrol, 2, 1)? "ON" : "OFF",
+                        _getbits(r->rgb[i].mlccontrol, 1, 1)? "ON" : "OFF",
+                        _getbits(r->rgb[i].mlccontrol, 0, 1)? "ON" : "OFF");
+        if (device == 1 && i == 1)
+                break;
         }
-        fprintf(stdout, "\n");
-}
-
-static void dump_mlc_yuv(int device)
-{
-        struct mlc_reg reg;
-        unsigned int *addr, *base;
-        unsigned int offset = 0;
-        int i;
-
-        hw_mlc_dump(device, &reg);
-
-        addr = (unsigned int *)&reg.yuv;
-        base = (unsigned int *)hw_mlc_get_base(device) +
-              ((unsigned int)addr - (unsigned int)&reg);
-
-        offset = (unsigned int)base % 16;
-        base = base - offset;
-        addr = addr - offset;
-
-        fprintf(stdout, "MLC.%d VIDEO\n", device);
-        for (i = 0; i < (int)sizeof(struct mlcyuvlayer)/4; i++) {
-                if (!(i % 4))
-	                fprintf(stdout, "\n0x%08x: ", base);
-                fprintf(stdout, "0x%08x ", *(unsigned int*)addr);
-                base++, addr++;
-        }
-        fprintf(stdout, "\n");
-}
-
-static void dump_mlc(int device)
-{
-        struct mlc_reg reg;
-        unsigned int *addr = (unsigned int *)&reg;
-        unsigned int *base = (unsigned int *)hw_mlc_get_base(device);
-        int i;
-
-        hw_mlc_dump(device, &reg);
-       
-        fprintf(stdout, "MLC.%d\n", device);
-        for (i = 0; i < (int)sizeof(struct mlc_reg)/4; i++) {
-                if (!(i % 4))
-	                fprintf(stdout, "\n0x%08x: ", base);
-                fprintf(stdout, "0x%08x ", *addr);
-                base++, addr++;
-        }
-        fprintf(stdout, "\n");
+        fprintf(stdout, "YUV\n");
+        fprintf(stdout, " %-3s, %d x %d (l:%d, t:%d, r:%d, b:%d), %s(0x%x)\n",
+                        _getbits(r->yuv.mlccontrol, 5, 1) ? "ON" : "OFF",
+                        _getbits(r->yuv.mlcleftright,  0, 11) - _getbits(r->yuv.mlcleftright, 16, 11) + 1,
+                        _getbits(r->yuv.mlctopbottom,  0, 11) - _getbits(r->yuv.mlctopbottom, 16, 11) + 1,
+                        _getbits(r->yuv.mlcleftright, 16, 11),
+                        _getbits(r->yuv.mlctopbottom, 16, 11),
+                        _getbits(r->yuv.mlcleftright,  0, 11),
+                        _getbits(r->yuv.mlctopbottom,  0, 11),
+                        hw_format_name(r->yuv.mlccontrol & _maskbit(16, 2), 8),
+                        r->yuv.mlccontrol & _maskbit(16, 16));
+        fprintf(stdout, " stride:%d/%d/%d, scale:%d,%d, %d x %d -> %d x %d, hvfilter: %-3s/%-3s\n",
+                        r->yuv.mlcvstride, r->yuv.mlcvstridecb, r->yuv.mlcvstridecr,
+                        r->yuv.mlchscale, r->yuv.mlcvscale,
+                        _getbits(r->yuv.mlchscale, 0, 23) *
+                        (_getbits(r->yuv.mlcleftright, 0, 11) - _getbits(r->yuv.mlcleftright, 16, 11) + 1) /
+                        MLC_YUV_SCALE_CONSTANT,
+                        _getbits(r->yuv.mlcvscale, 0, 23) *
+                        (_getbits(r->yuv.mlctopbottom, 0, 11) - _getbits(r->yuv.mlctopbottom, 16, 11) + 1) /
+                        MLC_YUV_SCALE_CONSTANT,
+                        _getbits(r->yuv.mlcleftright, 0, 11) - _getbits(r->yuv.mlcleftright, 16, 11) + 1,
+                        _getbits(r->yuv.mlctopbottom, 0, 11) - _getbits(r->yuv.mlctopbottom, 16, 11) + 1,
+                        _getbits(r->yuv.mlchscale, 28, 2) == 0x3 ? " ON" : "OFF",
+                        _getbits(r->yuv.mlcvscale, 28, 2) == 0x3 ? " ON" : "OFF");
+        fprintf(stdout, " blend:%-3s, invcolor:%-3s, tpcolor:%-3s\n",
+                        _getbits(r->yuv.mlccontrol, 2, 1) ? "ON" : "OFF",
+                        _getbits(r->yuv.mlccontrol, 1, 1) ? "ON" : "OFF",
+                        _getbits(r->yuv.mlccontrol, 0, 1) ? "ON" : "OFF");
+        fprintf(stdout, " luminance contrast:%d, bright:%d\n",
+                        _getbits(r->yuv.mlcluenh, 0, 3),
+                        _getbits(r->yuv.mlcluenh, 8, 8),
+                        _getbits(r->yuv.mlccontrol, 1, 1)? "ON" : "OFF",
+                        _getbits(r->yuv.mlccontrol, 0, 1)? "ON" : "OFF");
+        fprintf(stdout, " chrominamce 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
+                        r->yuv.mlcchenh[0], r->yuv.mlcchenh[1],
+                        r->yuv.mlcchenh[2], r->yuv.mlcchenh[3]);
+        fprintf(stdout, "Gamma\n");
+        fprintf(stdout, " R:%-3s, G:%-3s, B:%-3s, Alphan:%-3s, RBB:%-3s, YUV:%-3s, Dither:%-3s\n",
+                        _getbits(r->mlcgammacont,  2, 2) == 3 ? "ON" : "OFF",
+                        _getbits(r->mlcgammacont,  8, 2) == 3 ? "ON" : "OFF",
+                        _getbits(r->mlcgammacont, 10, 2) == 3 ? "ON" : "OFF",
+                        _getbits(r->mlcgammacont,  5, 1) ? "RGB" : "YUV",
+                        _getbits(r->mlcgammacont,  0, 1) ? "ON" : "OFF",
+                        _getbits(r->mlcgammacont,  1, 1) ? "ON" : "OFF",
+                        _getbits(r->mlcgammacont,  4, 1) ? "ON" : "OFF",
+                        _getbits(r->mlcgammacont,  0, 1) ? "ON" : "OFF");
 }
 
 static const char *hw_format_name(unsigned int format, int bpp)
@@ -344,7 +352,7 @@ static unsigned int format_convert_yuv(unsigned int format, unsigned int *fourcc
 	return 0;
 }
 
-static int get_plane_ids(struct device *dev, struct op_arg *op)
+static int get_plane_ids(struct op_arg *op, struct device *dev)
 {
         struct plane_opt *p = &op->plane;
         int counts = 0;
@@ -389,7 +397,7 @@ static int get_plane_ids(struct device *dev, struct op_arg *op)
 	return 0;
 }
 
-static int format_to_fourcc(struct raw_header *header, struct op_arg *op)
+static int format_to_fourcc(struct op_arg *op, struct raw_header *header)
 {
         struct plane_opt *p = &op->plane;
         unsigned int format;
@@ -415,10 +423,9 @@ static int format_to_fourcc(struct raw_header *header, struct op_arg *op)
         return 0;
 }
 
-static int set_plane_rect(struct raw_header *header, struct op_arg *op)
+static int set_plane_rect(struct op_arg *op, struct raw_header *header)
 {
         struct plane_opt *p = &op->plane;
-        int constant = 2048; /* MLC H/V scale factor */
         int x, y;
 
         if (op->layer == mlc_layer_video) {
@@ -435,11 +442,11 @@ static int set_plane_rect(struct raw_header *header, struct op_arg *op)
 
                 /* Note. get width with stride for the aligned image */
 #if 0                
-                p->src_w = _getbits(r->mlchscale, 0, 23) * w / constant; 
+                p->src_w = _getbits(r->mlchscale, 0, 23) * w / MLC_YUV_SCALE_CONSTANT;
 #endif
                 p->src_x = 0, p->src_y = 0;
                 p->src_w = r->mlcvstride / div;
-                p->src_h = _getbits(r->mlcvscale, 0, 23) * h / constant; 
+                p->src_h = _getbits(r->mlcvscale, 0, 23) * h / MLC_YUV_SCALE_CONSTANT;
 
                 p->crtc_x = x,
                 p->crtc_y = y;
@@ -471,7 +478,52 @@ static int set_plane_rect(struct raw_header *header, struct op_arg *op)
         return 0;
 }
 
-static int set_plane_image(struct raw_header *header, struct op_arg *op)
+static int set_hw_porps(struct op_arg *op, struct mlc_reg *reg)
+{
+        struct mlc_reg *r = (struct mlc_reg *)op->mem;
+
+        /* top */
+        writel(reg->mlcbgcolor, &r->mlcbgcolor);
+
+        /* rgb0/1 */
+        writel(reg->rgb[0].mlctpcolor, &r->rgb[0].mlctpcolor);
+        writel(reg->rgb[0].mlcinvcolor, &r->rgb[0].mlcinvcolor);
+        writel(reg->rgb[1].mlctpcolor, &r->rgb[1].mlctpcolor);
+        writel(reg->rgb[1].mlcinvcolor, &r->rgb[1].mlcinvcolor);
+
+        /* video */
+        writel(reg->yuv.mlcinvcolor, &r->yuv.mlcinvcolor);
+        writel(reg->yuv.mlcluenh, &r->yuv.mlcluenh);
+        writel(reg->yuv.mlcchenh[0], &r->yuv.mlcchenh[0]);
+        writel(reg->yuv.mlcchenh[1], &r->yuv.mlcchenh[1]);
+        writel(reg->yuv.mlcchenh[2], &r->yuv.mlcchenh[2]);
+        writel(reg->yuv.mlcchenh[3], &r->yuv.mlcchenh[3]);
+
+        /* gamma */
+#if 0
+        writel(reg->mlcpaletetable2, &r->mlcpaletetable2);
+        writel(reg->mlcgammacont, &r->mlcgammacont);
+        writel(reg->mlcrgammatablewrite, &r->mlcrgammatablewrite);
+        writel(reg->mlcggammatablewrite, &r->mlcggammatablewrite);
+        writel(reg->mlcbgammatablewrite, &r->mlcbgammatablewrite);
+        writel(reg->yuvlayergammatable_red, &r->yuvlayergammatable_red);
+        writel(reg->yuvlayergammatable_green, &r->yuvlayergammatable_green);
+        writel(reg->yuvlayergammatable_blue, &r->yuvlayergammatable_blue);
+#else
+        writel(0, &r->mlcpaletetable2);
+        writel(0, &r->mlcgammacont);
+        writel(0, &r->mlcrgammatablewrite);
+        writel(0, &r->mlcggammatablewrite);
+        writel(0, &r->mlcbgammatablewrite);
+        writel(0, &r->yuvlayergammatable_red);
+        writel(0, &r->yuvlayergammatable_green);
+        writel(0, &r->yuvlayergammatable_blue);
+
+#endif
+        return 0;
+}
+
+static int set_plane_image(struct op_arg *op, struct raw_header *header)
 {
         struct util_image_info *image = &op->plane.image;
 
@@ -479,12 +531,6 @@ static int set_plane_image(struct raw_header *header, struct op_arg *op)
         image->offset = RAW_HEADER_SIZE;
         image->type = UTIL_IMAGE_RAW;
 
-        return 0;
-}
-
-static int set_plane_property(struct raw_header *header, struct op_arg *op)
-{
-        
         return 0;
 }
 
@@ -649,7 +695,6 @@ static int raw_caputre_yuv(struct op_arg *op, struct mlcyuvlayer *reg)
         void *addr, *mem[3] = { NULL, }, *mapped[3] = { NULL, };
         int x, y, width, height, stride, size[3] = { 0, };
         unsigned int format;
-        int constant = 2048; /* MLC H/V scale factor */
         int div = 1, i, ret;
 
         if (fp == NULL || reg == NULL)
@@ -668,7 +713,7 @@ static int raw_caputre_yuv(struct op_arg *op, struct mlcyuvlayer *reg)
         /* Note. get width with scale factor */
         height = _getbits(reg->mlctopbottom, 0, 11) -
                  _getbits(reg->mlctopbottom, 16, 11) + 1;
-        height = _getbits(reg->mlcvscale, 0, 23) * height / constant; 
+        height = _getbits(reg->mlcvscale, 0, 23) * height / MLC_YUV_SCALE_CONSTANT;
         x = _getbits(reg->mlcleftright, 16, 12);
         y = _getbits(reg->mlctopbottom, 16, 12);
 
@@ -733,7 +778,7 @@ __exit:
         return ret;
 }
 
-static int raw_image_header(struct raw_header *header, struct op_arg *op)
+static int raw_image_header(struct op_arg *op, struct raw_header *header)
 {
         const char sign[4] = RAW_HEADER_SIGN;
         char *mode = op->flag == op_flag_capture ? "wb" : "rb";
@@ -787,7 +832,7 @@ static int capture_device(struct op_arg *op)
 	}
         memset(header, 0, RAW_HEADER_SIZE);
 
-        ret = raw_image_header(header, op);
+        ret = raw_image_header(op, header);
         if (ret)
                 goto __exit_capture;
         
@@ -823,7 +868,7 @@ static int update_device(struct op_arg *op)
 	}
         memset(header, 0, RAW_HEADER_SIZE);
 
-        ret = raw_image_header(header, op);
+        ret = raw_image_header(op, header);
         if (ret) 
                 goto __exit_update;
 
@@ -833,7 +878,7 @@ static int update_device(struct op_arg *op)
                 goto __exit_update;
 	}
 
-        ret = get_plane_ids(&dev, op);
+        ret = get_plane_ids(op, &dev);
         if (ret)
                 goto __exit_update;
 
@@ -841,13 +886,15 @@ static int update_device(struct op_arg *op)
                         op->device, op->layer,
                         op->plane.crtc_id, op->plane.plane_id);
 
-        ret = format_to_fourcc(header, op);
+        ret = format_to_fourcc(op, header);
         if (ret)
                 goto __exit_update;
 
-        ret = set_plane_rect(header, op);
+        ret = set_plane_rect(op, header);
         if (ret)
                 goto __exit_update;
+
+        set_hw_porps(op, &header->mlc);
 
         fprintf(stdout, "src %d,%d, %d x %d %dbpp, %s(0x%x) - %s(0x%x)\n",
                         op->plane.src_x, op->plane.src_y, op->plane.src_w, op->plane.src_h, 
@@ -856,13 +903,11 @@ static int update_device(struct op_arg *op)
                         util_format_name(op->plane.fourcc),
                         op->plane.fourcc);
 
-        ret = set_plane_image(header, op);
+        ret = set_plane_image(op, header);
         if (ret)
                 goto __exit_update;
 
         drm_set_plane(&dev, p);
-
-        set_plane_property(header, op);
 
         /* wait */      
         getchar();
@@ -913,7 +958,7 @@ static int parse_file(struct op_arg *op)
         fprintf(stdout, "FILE  - %s\n", op->file);
 
         op->flag == op_flag_print;
-        ret = raw_image_header(header, op);
+        ret = raw_image_header(op, header);
         if (ret){  
                 free(header);
                 return -EINVAL;
@@ -950,10 +995,10 @@ static void usage(char *name)
 {
 	fprintf(stdout, "usage: %s \n", name);
 	fprintf(stdout, "\n Options:\n");
-	fprintf(stdout, "\t-c <dev>,<layer>,<file>\tcapture <dev>'s <layder> to <file>\n");
-	fprintf(stdout, "\t-s <file>\tstore <file> with header info\n");
-	fprintf(stdout, "\t-p <dev>,<layer>\tprint   <dev> and <layder>\n");
-	fprintf(stdout, "\t-i <file>\tprint <file> header\n");
+	fprintf(stdout, "\t-c <dev>,<layer>,<file>\tcapture <dev>'s <layer> to <file>\n");
+	fprintf(stdout, "\t-s <file>\t\tstore <file> with header info\n");
+	fprintf(stdout, "\t-p <dev>,<layer>\tprint <dev> and <layer>'s hw register\n");
+	fprintf(stdout, "\t-i <file>\t\tprint <file>'s hw register\n");
         fprintf(stderr, " Info:\n");
 	fprintf(stderr, "\t<dev>\tsupport 0,1\n");
 	fprintf(stderr, "\t<layer>\t0=RGB.0, 1=RGB.1, 2=Video layer\n");

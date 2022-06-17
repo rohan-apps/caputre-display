@@ -3,9 +3,10 @@
 
 #include <stdint.h>
 
-#define NUMBER_OF_MLC_MODULE    2
-#define PHY_BASEADDR_MLC0	0xC0102000
-#define PHY_BASEADDR_MLC1	0xC0102400
+#define NUMBER_OF_MLC_MODULE            2
+#define PHY_BASEADDR_MLC0	        0xC0102000
+#define PHY_BASEADDR_MLC1	        0xC0102400
+#define MLC_YUV_SCALE_CONSTANT          2048
 
 struct mlc_reg {
 	uint32_t mlccontrolt;
