@@ -51,12 +51,14 @@ struct plane_opt {
         struct util_image_info image;
 };
 
-enum op_flag {
-        op_flag_print,
-        op_flag_capture,
-        op_flag_update,
-        op_flag_unknown,
+enum op_mode {
+        op_mode_print,
+        op_mode_capture,
+        op_mode_update,
+        op_mode_unknown,
 };
+
+#define FLAG_GAMMAN_ENB (1)
 
 struct op_arg {
         int device;
@@ -66,7 +68,8 @@ struct op_arg {
         int bpp;
         char *file;
         FILE *fp;
-        enum op_flag flag;
+        enum op_mode mode;
+        unsigned int flags;
         struct plane_opt plane;
 };
 
@@ -478,20 +481,28 @@ static int set_plane_rect(struct op_arg *op, struct raw_header *header)
         return 0;
 }
 
-static int set_hw_porps(struct op_arg *op, struct mlc_reg *reg)
+static int set_mlc_property(struct op_arg *op, struct mlc_reg *reg)
 {
         struct mlc_reg *r = (struct mlc_reg *)op->mem;
+        unsigned value;
 
         /* top */
+        /* - priority */
+        writel_bits(reg->mlccontrolt, &r->mlccontrolt, 8, 2);
         writel(reg->mlcbgcolor, &r->mlcbgcolor);
 
         /* rgb0/1 */
+        /* - blend, invcolor, tpcolor */
+        writel_bits(reg->rgb[0].mlccontrol, &r->rgb[0].mlccontrol, 0, 3);
         writel(reg->rgb[0].mlctpcolor, &r->rgb[0].mlctpcolor);
         writel(reg->rgb[0].mlcinvcolor, &r->rgb[0].mlcinvcolor);
+        writel_bits(reg->rgb[1].mlccontrol, &r->rgb[1].mlccontrol, 0, 3);
         writel(reg->rgb[1].mlctpcolor, &r->rgb[1].mlctpcolor);
         writel(reg->rgb[1].mlcinvcolor, &r->rgb[1].mlcinvcolor);
 
         /* video */
+        /* - blend */
+        writel_bits(reg->yuv.mlccontrol, &r->yuv.mlccontrol, 2, 1);
         writel(reg->yuv.mlcinvcolor, &r->yuv.mlcinvcolor);
         writel(reg->yuv.mlcluenh, &r->yuv.mlcluenh);
         writel(reg->yuv.mlcchenh[0], &r->yuv.mlcchenh[0]);
@@ -502,24 +513,18 @@ static int set_hw_porps(struct op_arg *op, struct mlc_reg *reg)
         /* gamma */
 #if 0
         writel(reg->mlcpaletetable2, &r->mlcpaletetable2);
-        writel(reg->mlcgammacont, &r->mlcgammacont);
         writel(reg->mlcrgammatablewrite, &r->mlcrgammatablewrite);
         writel(reg->mlcggammatablewrite, &r->mlcggammatablewrite);
         writel(reg->mlcbgammatablewrite, &r->mlcbgammatablewrite);
         writel(reg->yuvlayergammatable_red, &r->yuvlayergammatable_red);
         writel(reg->yuvlayergammatable_green, &r->yuvlayergammatable_green);
         writel(reg->yuvlayergammatable_blue, &r->yuvlayergammatable_blue);
-#else
-        writel(0, &r->mlcpaletetable2);
-        writel(0, &r->mlcgammacont);
-        writel(0, &r->mlcrgammatablewrite);
-        writel(0, &r->mlcggammatablewrite);
-        writel(0, &r->mlcbgammatablewrite);
-        writel(0, &r->yuvlayergammatable_red);
-        writel(0, &r->yuvlayergammatable_green);
-        writel(0, &r->yuvlayergammatable_blue);
-
 #endif
+        if (op->flags & FLAG_GAMMAN_ENB)
+                writel(reg->mlcgammacont, &r->mlcgammacont);
+        else
+                writel(0, &r->mlcgammacont);
+
         return 0;
 }
 
@@ -640,7 +645,7 @@ static void drm_clear_plane(struct device *dev, struct plane_opt *p)
 static int raw_capture_rgb(struct op_arg *op, struct mlcrgblayer *reg)
 {
 	FILE *fp = op->fp;
-        char *mode = op->flag == op_flag_capture ? "ab" : "rb";
+        char *mode = op->mode == op_mode_capture ? "ab" : "rb";
         void *addr, *mem, *mapped = NULL;
         int x, y, width, height, linestride, size;
         unsigned int format;
@@ -781,7 +786,7 @@ __exit:
 static int raw_image_header(struct op_arg *op, struct raw_header *header)
 {
         const char sign[4] = RAW_HEADER_SIGN;
-        char *mode = op->flag == op_flag_capture ? "wb" : "rb";
+        char *mode = op->mode == op_mode_capture ? "wb" : "rb";
 	FILE *fp = NULL;
 
         fp = fopen(op->file, mode);
@@ -793,7 +798,7 @@ static int raw_image_header(struct op_arg *op, struct raw_header *header)
 
         op->fp = fp;
 
-        if (op->flag == op_flag_capture) {
+        if (op->mode == op_mode_capture) {
                 header->sign[0] = sign[0];
                 header->sign[1] = sign[1];
                 header->sign[2] = sign[2];
@@ -894,7 +899,7 @@ static int update_device(struct op_arg *op)
         if (ret)
                 goto __exit_update;
 
-        set_hw_porps(op, &header->mlc);
+        set_mlc_property(op, &header->mlc);
 
         fprintf(stdout, "src %d,%d, %d x %d %dbpp, %s(0x%x) - %s(0x%x)\n",
                         op->plane.src_x, op->plane.src_y, op->plane.src_w, op->plane.src_h, 
@@ -957,7 +962,7 @@ static int parse_file(struct op_arg *op)
 
         fprintf(stdout, "FILE  - %s\n", op->file);
 
-        op->flag == op_flag_print;
+        op->mode == op_mode_print;
         ret = raw_image_header(op, header);
         if (ret){  
                 free(header);
@@ -978,12 +983,12 @@ static int parse_arg(char *arg, struct op_arg *op)
 
         op->device = strtoul(arg, &end, 10);
         if (*end != ',')
-                return op->flag == op_flag_print ? 0 : -EINVAL;
+                return op->mode == op_mode_print ? 0 : -EINVAL;
 
         arg = end +  1;
         op->layer = strtoul(arg, &end, 10);
         if (*end != ',')
-                return op->flag == op_flag_print ? 0 : -EINVAL;
+                return op->mode == op_mode_print ? 0 : -EINVAL;
 
         arg = end +  1;
         op->file = arg;
@@ -999,6 +1004,7 @@ static void usage(char *name)
 	fprintf(stdout, "\t-s <file>\t\tstore <file> with header info\n");
 	fprintf(stdout, "\t-p <dev>,<layer>\tprint <dev> and <layer>'s hw register\n");
 	fprintf(stdout, "\t-i <file>\t\tprint <file>'s hw register\n");
+	fprintf(stdout, "\t-g \t\tset gamma when store <file> if not set, disable gamma\n");
         fprintf(stderr, " Info:\n");
 	fprintf(stderr, "\t<dev>\tsupport 0,1\n");
 	fprintf(stderr, "\t<layer>\t0=RGB.0, 1=RGB.1, 2=Video layer\n");
@@ -1022,21 +1028,21 @@ int main(int argc, char **argv)
 	}
         memset(op, 0, sizeof(*op));
         op->layer = mlc_layer_unknown;
-        op->flag = op_flag_unknown;
+        op->mode = op_mode_unknown;
 
-	while (-1 != (opt = getopt(argc, argv, "hc:s:p:i:"))) {
+	while (-1 != (opt = getopt(argc, argv, "hc:s:p:i:g"))) {
 		switch (opt) {
 		case 'c':
-                        op->flag = op_flag_capture;
+                        op->mode = op_mode_capture;
                         ret = parse_arg(optarg, op);
 			break;
 		case 's':
-                        op->flag = op_flag_update;
+                        op->mode = op_mode_update;
                         op->file = optarg;
                         ret = 0;
 			break;
                case 'p':
-                        op->flag = op_flag_print;
+                        op->mode = op_mode_print;
                         ret = parse_arg(optarg, op);
 			break;
                 case 'i':
@@ -1044,6 +1050,9 @@ int main(int argc, char **argv)
                         ret = parse_file(op);
                         if (!ret)
                                 return 0;
+                        break;
+                case 'g':
+                        op->flags |= FLAG_GAMMAN_ENB;
                         break;
 		case 'h':
 			usage(argv[0]);
@@ -1081,14 +1090,14 @@ int main(int argc, char **argv)
 
        fprintf(stdout, "reg mlc %p -> %p %dbyte\n", addr, mem, size);
 
-        switch (op->flag) {
-        case op_flag_print:
+        switch (op->mode) {
+        case op_mode_print:
                 ret = print_device(op);
                 break;
-        case op_flag_capture:
+        case op_mode_capture:
                 ret = capture_device(op);
                 break;
-        case op_flag_update:
+        case op_mode_update:
                 ret = update_device(op);
                 break;
         }
