@@ -1,7 +1,35 @@
+WARN_CFLAGS = \
+	-Wall \
+	-Wextra \
+	-Wsign-compare \
+	-Werror-implicit-function-declaration \
+	-Wpointer-arith \
+	-Wwrite-strings \
+	-Wstrict-prototypes \
+	-Wmissing-prototypes \
+	-Wmissing-declarations \
+	-Wnested-externs \
+	-Wpacked \
+	-Wswitch-enum \
+	-Wmissing-format-attribute \
+	-Wstrict-aliasing=2 \
+	-Winit-self \
+	-Wdeclaration-after-statement \
+	-Wold-style-definition \
+	-Wno-unused-parameter \
+	-Wno-attributes \
+	-Wno-long-long \
+	-Winline \
+	-Wshadow \
+	-Wno-missing-field-initializers
+
 AM_CFLAGS = \
 	$(WARN_CFLAGS) \
-	-W \
+	-Wno-pointer-arith \
+	-fvisibility=hidden \
+	-pthread \
 	-Wno-unused-result \
+	-g -O2 \
 	-I${includedir}/drm
 
 AM_CFLAGS += -static
