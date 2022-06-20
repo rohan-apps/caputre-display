@@ -62,7 +62,7 @@ struct util_format_info {
 unsigned int util_format_fourcc(const char *name);
 const struct util_format_info *util_format_info_find(unsigned int format);
 unsigned int util_format_bpp(unsigned int format,
-                             unsigned int width, unsigned int height);
+			     unsigned int width, unsigned int height);
 const char *util_format_name(unsigned int format);
 const char *util_format_parse_name(unsigned int format);
 int util_format_is_yuv(unsigned format);

@@ -9,15 +9,16 @@ enum util_image_type {
 };
 
 struct util_image_info {
-        const char *file;
-        enum util_image_type type;
-        unsigned int offset;
+	const char *file;
+	enum util_image_type type;
+	unsigned int offset;
 };
 
 struct bo *util_bo_create_image(int fd, unsigned int fourcc,
-                                unsigned int width, unsigned int height,
-                                unsigned int handles[4], unsigned int pitches[4],
-                                unsigned int offsets[4],
-                                const struct util_image_info *image);
+				unsigned int width, unsigned int height,
+				unsigned int handles[4],
+				unsigned int pitches[4],
+				unsigned int offsets[4],
+				const struct util_image_info *image);
 
 #endif

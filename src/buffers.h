@@ -30,15 +30,15 @@
 struct bo;
 
 struct bo *bo_create_dumb(int fd, unsigned int width, unsigned int height,
-                          unsigned int bpp);
+			  unsigned int bpp);
 void bo_destroy_dumb(struct bo *bo);
 int bo_map(struct bo *bo, void **out);
 void bo_unmap(struct bo *bo);
 
 int bo_dumb_to_plane(unsigned int fourcc,
-                unsigned int width, unsigned int height,
-                const struct bo *bo, const void *virtual,
-                unsigned int handles[4], unsigned int pitches[4],
-                unsigned int offsets[4], void *planes[3]);
+		     unsigned int width, unsigned int height,
+		     const struct bo *bo, const void *virtual,
+		     unsigned int handles[4], unsigned int pitches[4],
+		     unsigned int offsets[4], void *planes[3]);
 
 #endif

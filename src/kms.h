@@ -92,7 +92,7 @@ struct device {
 struct property_arg {
 	uint32_t obj_id;
 	uint32_t obj_type;
-	char name[DRM_PROP_NAME_LEN+1];
+	char name[DRM_PROP_NAME_LEN + 1];
 	uint32_t prop_id;
 	uint64_t value;
 };

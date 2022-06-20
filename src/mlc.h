@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 #define NUMBER_OF_MLC_MODULE            2
-#define PHY_BASEADDR_MLC0	        0xC0102000
-#define PHY_BASEADDR_MLC1	        0xC0102400
+#define PHY_BASEADDR_MLC0               0xC0102000
+#define PHY_BASEADDR_MLC1               0xC0102400
 #define MLC_YUV_SCALE_CONSTANT          2048
 
 struct mlc_reg {
@@ -21,8 +21,8 @@ struct mlc_reg {
 		uint32_t mlcinvalidleftright1;
 		uint32_t mlcinvalidtopbottom1;
 		uint32_t mlccontrol;
-		int32_t  mlchstride;
-		int32_t  mlcvstride;
+		int32_t mlchstride;
+		int32_t mlcvstride;
 		uint32_t mlctpcolor;
 		uint32_t mlcinvcolor;
 		uint32_t mlcaddress;
@@ -40,8 +40,8 @@ struct mlc_reg {
 		uint32_t mlcaddress;
 		uint32_t mlcaddresscb;
 		uint32_t mlcaddresscr;
-		int32_t  mlcvstridecb;
-		int32_t  mlcvstridecr;
+		int32_t mlcvstridecb;
+		int32_t mlcvstridecr;
 		uint32_t mlchscale;
 		uint32_t mlcvscale;
 		uint32_t mlcluenh;
@@ -56,8 +56,8 @@ struct mlc_reg {
 		uint32_t mlcinvalidleftright1;
 		uint32_t mlcinvalidtopbottom1;
 		uint32_t mlccontrol;
-		int32_t  mlchstride;
-		int32_t  mlcvstride;
+		int32_t mlchstride;
+		int32_t mlcvstride;
 		uint32_t mlctpcolor;
 		uint32_t mlcinvcolor;
 		uint32_t mlcaddress;
@@ -92,7 +92,7 @@ enum mlc_priority {
 };
 
 enum mlc_format {
-        /* RGB */
+	/* RGB */
 	mlc_rgbfmt_r5g6b5 = 0x44320000ul,
 	mlc_rgbfmt_b5g6r5 = 0xc4320000ul,
 	mlc_rgbfmt_x1r5g5b5 = 0x43420000ul,
@@ -113,7 +113,7 @@ enum mlc_format {
 	mlc_rgbfmt_x8b8g8r8 = 0xc6530001ul,
 	mlc_rgbfmt_a8r8g8b8 = 0x06530000ul,
 	mlc_rgbfmt_a8b8g8r8 = 0x86530000ul,
-        /* video */
+	/* video */
 	mlc_yuvfmt_420 = 0ul << 16,
 	mlc_yuvfmt_422 = 1ul << 16,
 	mlc_yuvfmt_444 = 3ul << 16,
@@ -123,10 +123,10 @@ enum mlc_format {
 };
 
 enum mlc_layer {
-        mlc_layer_rgb0,
-        mlc_layer_rgb1,
-        mlc_layer_video,
-        mlc_layer_unknown,
+	mlc_layer_rgb0,
+	mlc_layer_rgb1,
+	mlc_layer_video,
+	mlc_layer_unknown,
 };
 
 const void *hw_mlc_get_base(int dev);

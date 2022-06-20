@@ -38,7 +38,7 @@
  */
 #define _GNU_SOURCE
 #include <stdio.h>
-#include <ctype.h> 
+#include <ctype.h>
 #include <errno.h>
 #include <stdint.h>
 #include <inttypes.h>
@@ -61,24 +61,24 @@ void drm_free_resources(struct resources *res)
 	if (!res)
 		return;
 
-#define free_resource(_res, __res, type, Type)					\
-	do {									\
-		if (!(_res)->type##s)						\
-			break;							\
-		for (i = 0; i < (int)(_res)->__res->count_##type##s; ++i) {	\
-			if (!(_res)->type##s[i].type)				\
-				break;						\
-			drmModeFree##Type((_res)->type##s[i].type);		\
-		}								\
-		free((_res)->type##s);						\
+#define free_resource(_res, __res, type, Type)                                  \
+	do {                                                                    \
+		if (!(_res)->type##s)                                           \
+			break;                                                  \
+		for (i = 0; i < (int)(_res)->__res->count_##type##s; ++i) {     \
+			if (!(_res)->type##s[i].type)                           \
+				break;                                          \
+			drmModeFree##Type((_res)->type##s[i].type);             \
+		}                                                               \
+		free((_res)->type##s);                                          \
 	} while (0)
 
-#define free_properties(_res, __res, type)					\
-	do {									\
-		for (i = 0; i < (int)(_res)->__res->count_##type##s; ++i) {	\
-			drmModeFreeObjectProperties(res->type##s[i].props);	\
-			free(res->type##s[i].props_info);			\
-		}								\
+#define free_properties(_res, __res, type)                                      \
+	do {                                                                    \
+		for (i = 0; i < (int)(_res)->__res->count_##type##s; ++i) {     \
+			drmModeFreeObjectProperties(res->type##s[i].props);     \
+			free(res->type##s[i].props_info);                       \
+		}                                                               \
 	} while (0)
 
 	if (res->res) {
@@ -126,23 +126,25 @@ struct resources *drm_get_resources(struct device *dev)
 	}
 
 	res->crtcs = calloc(res->res->count_crtcs, sizeof(*res->crtcs));
-	res->encoders = calloc(res->res->count_encoders, sizeof(*res->encoders));
-	res->connectors = calloc(res->res->count_connectors, sizeof(*res->connectors));
+	res->encoders =
+		calloc(res->res->count_encoders, sizeof(*res->encoders));
+	res->connectors =
+		calloc(res->res->count_connectors, sizeof(*res->connectors));
 	res->fbs = calloc(res->res->count_fbs, sizeof(*res->fbs));
 
 	if (!res->crtcs || !res->encoders || !res->connectors || !res->fbs)
 		goto error;
 
-#define get_resource(_res, __res, type, Type)					\
-	do {									\
-		for (i = 0; i < (int)(_res)->__res->count_##type##s; ++i) {	\
-			(_res)->type##s[i].type =				\
+#define get_resource(_res, __res, type, Type)                                   \
+	do {                                                                    \
+		for (i = 0; i < (int)(_res)->__res->count_##type##s; ++i) {     \
+			(_res)->type##s[i].type =                               \
 				drmModeGet##Type(dev->fd, (_res)->__res->type##s[i]); \
-			if (!(_res)->type##s[i].type)				\
-				fprintf(stderr, "could not get %s %i: %s\n",	\
-					#type, (_res)->__res->type##s[i],	\
-					strerror(errno));			\
-		}								\
+			if (!(_res)->type##s[i].type)                           \
+				fprintf(stderr, "could not get %s %i: %s\n",    \
+					#type, (_res)->__res->type##s[i],       \
+					strerror(errno));                       \
+		}                                                               \
 	} while (0)
 
 	get_resource(res, res, crtc, Crtc);
@@ -157,35 +159,36 @@ struct resources *drm_get_resources(struct device *dev)
 		int num;
 
 		num = asprintf(&connector->name, "%s-%u",
-			 drm_lookup_connector_type_name(conn->connector_type),
-			 conn->connector_type_id);
+			       drm_lookup_connector_type_name(conn->
+							      connector_type),
+			       conn->connector_type_id);
 		if (num < 0)
 			goto error;
 	}
 
-#define get_properties(_res, __res, type, Type)					\
-	do {									\
-		for (i = 0; i < (int)(_res)->__res->count_##type##s; ++i) {	\
-			struct type *obj = &res->type##s[i];			\
-			unsigned int j;						\
-			obj->props =						\
+#define get_properties(_res, __res, type, Type)                                 \
+	do {                                                                    \
+		for (i = 0; i < (int)(_res)->__res->count_##type##s; ++i) {     \
+			struct type *obj = &res->type##s[i];                    \
+			unsigned int j;                                         \
+			obj->props =                                            \
 				drmModeObjectGetProperties(dev->fd, obj->type->type##_id, \
 							   DRM_MODE_OBJECT_##Type); \
-			if (!obj->props) {					\
-				fprintf(stderr,					\
+			if (!obj->props) {                                      \
+				fprintf(stderr,                                 \
 					"could not get %s %i properties: %s\n", \
-					#type, obj->type->type##_id,		\
-					strerror(errno));			\
-				continue;					\
-			}							\
-			obj->props_info = calloc(obj->props->count_props,	\
-						 sizeof(*obj->props_info));	\
-			if (!obj->props_info)					\
-				continue;					\
-			for (j = 0; j < obj->props->count_props; ++j)		\
-				obj->props_info[j] =				\
+					#type, obj->type->type##_id,            \
+					strerror(errno));                       \
+				continue;                                       \
+			}                                                       \
+			obj->props_info = calloc(obj->props->count_props,       \
+						 sizeof(*obj->props_info));     \
+			if (!obj->props_info)                                   \
+				continue;                                       \
+			for (j = 0; j < obj->props->count_props; ++j)           \
+				obj->props_info[j] =                            \
 					drmModeGetProperty(dev->fd, obj->props->props[j]); \
-		}								\
+		}                                                               \
 	} while (0)
 
 	get_properties(res, res, crtc, CRTC);
@@ -201,7 +204,8 @@ struct resources *drm_get_resources(struct device *dev)
 		return res;
 	}
 
-	res->planes = calloc(res->plane_res->count_planes, sizeof(*res->planes));
+	res->planes =
+		calloc(res->plane_res->count_planes, sizeof(*res->planes));
 	if (!res->planes)
 		goto error;
 
@@ -226,18 +230,18 @@ void drm_set_property(struct device *dev, struct property_arg *p)
 	p->obj_type = 0;
 	p->prop_id = 0;
 
-#define find_object(_res, __res, type, Type)					\
-	do {									\
-		for (i = 0; i < (int)(_res)->__res->count_##type##s; ++i) {	\
-			struct type *obj = &(_res)->type##s[i];			\
-			if (obj->type->type##_id != p->obj_id)			\
-				continue;					\
-			p->obj_type = DRM_MODE_OBJECT_##Type;			\
-			obj_type = #Type;					\
-			props = obj->props;					\
-			props_info = obj->props_info;				\
-		}								\
-	} while(0)								\
+#define find_object(_res, __res, type, Type)                                    \
+	do {                                                                    \
+		for (i = 0; i < (int)(_res)->__res->count_##type##s; ++i) {     \
+			struct type *obj = &(_res)->type##s[i];                 \
+			if (obj->type->type##_id != p->obj_id)                  \
+				continue;                                       \
+			p->obj_type = DRM_MODE_OBJECT_##Type;                   \
+			obj_type = #Type;                                       \
+			props = obj->props;                                     \
+			props_info = obj->props_info;                           \
+		}                                                               \
+	} while(0)                                                              \
 
 	find_object(dev->resources, res, crtc, CRTC);
 	if (p->obj_type == 0)
@@ -247,7 +251,7 @@ void drm_set_property(struct device *dev, struct property_arg *p)
 	if (p->obj_type == 0) {
 		fprintf(stderr, "Object %i not found, can't set property\n",
 			p->obj_id);
-			return;
+		return;
 	}
 
 	if (!props) {
@@ -273,29 +277,31 @@ void drm_set_property(struct device *dev, struct property_arg *p)
 
 	if (!dev->use_atomic)
 		ret = drmModeObjectSetProperty(dev->fd, p->obj_id, p->obj_type,
-									   p->prop_id, p->value);
+					       p->prop_id, p->value);
 	else
-		ret = drmModeAtomicAddProperty(dev->req, p->obj_id, p->prop_id, p->value);
+		ret = drmModeAtomicAddProperty(dev->req, p->obj_id, p->prop_id,
+					       p->value);
 
 	if (ret < 0)
-		fprintf(stderr, "failed to set %s %i property %s to %" PRIu64 ": %s\n",
-			obj_type, p->obj_id, p->name, p->value, strerror(errno));
+		fprintf(stderr,
+			"failed to set %s %i property %s to %" PRIu64 ": %s\n",
+			obj_type, p->obj_id, p->name, p->value,
+			strerror(errno));
 }
 
 int drm_format_support(const drmModePlanePtr ovr, uint32_t fmt)
 {
 	unsigned int i;
 
-	for (i = 0; i < ovr->count_formats; ++i) {
+	for (i = 0; i < ovr->count_formats; ++i)
 		if (ovr->formats[i] == fmt)
 			return 1;
-	}
 
 	return 0;
 }
 static const char *drm_lookup_type_name(unsigned int type,
-					 const struct type_name *table,
-					 unsigned int count)
+					const struct type_name *table,
+					unsigned int count)
 {
 	unsigned int i;
 
@@ -321,7 +327,7 @@ static const struct type_name encoder_type_names[] = {
 const char *drm_lookup_encoder_type_name(unsigned int type)
 {
 	return drm_lookup_type_name(type, encoder_type_names,
-				     ARRAY_SIZE(encoder_type_names));
+				    ARRAY_SIZE(encoder_type_names));
 }
 
 static const struct type_name connector_status_names[] = {
@@ -333,7 +339,7 @@ static const struct type_name connector_status_names[] = {
 const char *drm_lookup_connector_status_name(unsigned int status)
 {
 	return drm_lookup_type_name(status, connector_status_names,
-				     ARRAY_SIZE(connector_status_names));
+				    ARRAY_SIZE(connector_status_names));
 }
 
 static const struct type_name connector_type_names[] = {
@@ -360,7 +366,7 @@ static const struct type_name connector_type_names[] = {
 const char *drm_lookup_connector_type_name(unsigned int type)
 {
 	return drm_lookup_type_name(type, connector_type_names,
-				     ARRAY_SIZE(connector_type_names));
+				    ARRAY_SIZE(connector_type_names));
 }
 
 static const char * const modules[] = {
@@ -406,9 +412,9 @@ int drm_open(const char *device, const char *module)
 			printf("trying to open device '%s'...", modules[i]);
 
 			fd = drmOpen(modules[i], device);
-			if (fd < 0) {
+			if (fd < 0)
 				printf("failed\n");
-			} else {
+			else {
 				printf("done\n");
 				break;
 			}
@@ -423,7 +429,7 @@ int drm_open(const char *device, const char *module)
 	return fd;
 }
 
-void drm_close(int fd) 
+void drm_close(int fd)
 {
-        drmClose(fd);
+	drmClose(fd);
 }

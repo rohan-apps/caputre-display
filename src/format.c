@@ -66,9 +66,11 @@ static const struct util_format_info format_info[] = {
 	{ DRM_FORMAT_RGBX4444, "RX12", MAKE_RGB_INFO(4, 12, 4, 8, 4, 4, 0, 0) },
 	{ DRM_FORMAT_BGRA4444, "BA12", MAKE_RGB_INFO(4, 4, 4, 8, 4, 12, 4, 0) },
 	{ DRM_FORMAT_BGRX4444, "BX12", MAKE_RGB_INFO(4, 4, 4, 8, 4, 12, 0, 0) },
-	{ DRM_FORMAT_ARGB1555, "AR15", MAKE_RGB_INFO(5, 10, 5, 5, 5, 0, 1, 15) },
+	{ DRM_FORMAT_ARGB1555, "AR15",
+	  MAKE_RGB_INFO(5, 10, 5, 5, 5, 0, 1, 15) },
 	{ DRM_FORMAT_XRGB1555, "XR15", MAKE_RGB_INFO(5, 10, 5, 5, 5, 0, 0, 0) },
-	{ DRM_FORMAT_ABGR1555, "AB15", MAKE_RGB_INFO(5, 0, 5, 5, 5, 10, 1, 15) },
+	{ DRM_FORMAT_ABGR1555, "AB15",
+	  MAKE_RGB_INFO(5, 0, 5, 5, 5, 10, 1, 15) },
 	{ DRM_FORMAT_XBGR1555, "XB15", MAKE_RGB_INFO(5, 0, 5, 5, 5, 10, 0, 0) },
 	{ DRM_FORMAT_RGBA5551, "RA15", MAKE_RGB_INFO(5, 11, 5, 6, 5, 1, 1, 0) },
 	{ DRM_FORMAT_RGBX5551, "RX15", MAKE_RGB_INFO(5, 11, 5, 6, 5, 1, 0, 0) },
@@ -80,28 +82,42 @@ static const struct util_format_info format_info[] = {
 	{ DRM_FORMAT_BGR888, "BG24", MAKE_RGB_INFO(8, 0, 8, 8, 8, 16, 0, 0) },
 	{ DRM_FORMAT_RGB888, "RG24", MAKE_RGB_INFO(8, 16, 8, 8, 8, 0, 0, 0) },
 	/* RGB32 */
-	{ DRM_FORMAT_ARGB8888, "AR24", MAKE_RGB_INFO(8, 16, 8, 8, 8, 0, 8, 24) },
+	{ DRM_FORMAT_ARGB8888, "AR24",
+	  MAKE_RGB_INFO(8, 16, 8, 8, 8, 0, 8, 24) },
 	{ DRM_FORMAT_XRGB8888, "XR24", MAKE_RGB_INFO(8, 16, 8, 8, 8, 0, 0, 0) },
-	{ DRM_FORMAT_ABGR8888, "AB24", MAKE_RGB_INFO(8, 0, 8, 8, 8, 16, 8, 24) },
+	{ DRM_FORMAT_ABGR8888, "AB24",
+	  MAKE_RGB_INFO(8, 0, 8, 8, 8, 16, 8, 24) },
 	{ DRM_FORMAT_XBGR8888, "XB24", MAKE_RGB_INFO(8, 0, 8, 8, 8, 16, 0, 0) },
-	{ DRM_FORMAT_RGBA8888, "RA24", MAKE_RGB_INFO(8, 24, 8, 16, 8, 8, 8, 0) },
-	{ DRM_FORMAT_RGBX8888, "RX24", MAKE_RGB_INFO(8, 24, 8, 16, 8, 8, 0, 0) },
-	{ DRM_FORMAT_BGRA8888, "BA24", MAKE_RGB_INFO(8, 8, 8, 16, 8, 24, 8, 0) },
-	{ DRM_FORMAT_BGRX8888, "BX24", MAKE_RGB_INFO(8, 8, 8, 16, 8, 24, 0, 0) },
-	{ DRM_FORMAT_ARGB2101010, "AR30", MAKE_RGB_INFO(10, 20, 10, 10, 10, 0, 2, 30) },
-	{ DRM_FORMAT_XRGB2101010, "XR30", MAKE_RGB_INFO(10, 20, 10, 10, 10, 0, 0, 0) },
-	{ DRM_FORMAT_ABGR2101010, "AB30", MAKE_RGB_INFO(10, 0, 10, 10, 10, 20, 2, 30) },
-	{ DRM_FORMAT_XBGR2101010, "XB30", MAKE_RGB_INFO(10, 0, 10, 10, 10, 20, 0, 0) },
-	{ DRM_FORMAT_RGBA1010102, "RA30", MAKE_RGB_INFO(10, 22, 10, 12, 10, 2, 2, 0) },
-	{ DRM_FORMAT_RGBX1010102, "RX30", MAKE_RGB_INFO(10, 22, 10, 12, 10, 2, 0, 0) },
-	{ DRM_FORMAT_BGRA1010102, "BA30", MAKE_RGB_INFO(10, 2, 10, 12, 10, 22, 2, 0) },
-	{ DRM_FORMAT_BGRX1010102, "BX30", MAKE_RGB_INFO(10, 2, 10, 12, 10, 22, 0, 0) },
+	{ DRM_FORMAT_RGBA8888, "RA24",
+	  MAKE_RGB_INFO(8, 24, 8, 16, 8, 8, 8, 0) },
+	{ DRM_FORMAT_RGBX8888, "RX24",
+	  MAKE_RGB_INFO(8, 24, 8, 16, 8, 8, 0, 0) },
+	{ DRM_FORMAT_BGRA8888, "BA24",
+	  MAKE_RGB_INFO(8, 8, 8, 16, 8, 24, 8, 0) },
+	{ DRM_FORMAT_BGRX8888, "BX24",
+	  MAKE_RGB_INFO(8, 8, 8, 16, 8, 24, 0, 0) },
+	{ DRM_FORMAT_ARGB2101010, "AR30", MAKE_RGB_INFO(10, 20, 10, 10, 10, 0,
+							2, 30) },
+	{ DRM_FORMAT_XRGB2101010, "XR30", MAKE_RGB_INFO(10, 20, 10, 10, 10, 0,
+							0, 0) },
+	{ DRM_FORMAT_ABGR2101010, "AB30", MAKE_RGB_INFO(10, 0, 10, 10, 10, 20,
+							2, 30) },
+	{ DRM_FORMAT_XBGR2101010, "XB30", MAKE_RGB_INFO(10, 0, 10, 10, 10, 20,
+							0, 0) },
+	{ DRM_FORMAT_RGBA1010102, "RA30", MAKE_RGB_INFO(10, 22, 10, 12, 10, 2,
+							2, 0) },
+	{ DRM_FORMAT_RGBX1010102, "RX30", MAKE_RGB_INFO(10, 22, 10, 12, 10, 2,
+							0, 0) },
+	{ DRM_FORMAT_BGRA1010102, "BA30", MAKE_RGB_INFO(10, 2, 10, 12, 10, 22,
+							2, 0) },
+	{ DRM_FORMAT_BGRX1010102, "BX30", MAKE_RGB_INFO(10, 2, 10, 12, 10, 22,
+							0, 0) },
 };
 
 unsigned int util_format_bpp(unsigned int format,
-                  unsigned int width, unsigned int height)
+			     unsigned int width, unsigned int height)
 {
-        unsigned int bpp;
+	unsigned int bpp;
 
 	switch (format) {
 	case DRM_FORMAT_NV12:
@@ -171,12 +187,12 @@ unsigned int util_format_bpp(unsigned int format,
 		return 0;
 	}
 
-        return bpp;
+	return bpp;
 }
 
 int util_format_is_yuv(unsigned format)
 {
-        switch (format) {
+	switch (format) {
 	case DRM_FORMAT_NV12:
 	case DRM_FORMAT_NV21:
 	case DRM_FORMAT_NV16:
@@ -187,11 +203,11 @@ int util_format_is_yuv(unsigned format)
 	case DRM_FORMAT_YVU422:
 	case DRM_FORMAT_YUV444:
 	case DRM_FORMAT_YVU444:
-        case DRM_FORMAT_UYVY:
+	case DRM_FORMAT_UYVY:
 	case DRM_FORMAT_VYUY:
 	case DRM_FORMAT_YUYV:
 	case DRM_FORMAT_YVYU:
-	        return 1;
+		return 1;
 
 	case DRM_FORMAT_ARGB4444:
 	case DRM_FORMAT_XRGB4444:
@@ -236,17 +252,17 @@ int util_format_is_yuv(unsigned format)
 		return -1;
 	}
 
-        return -1;
+	return -1;
 }
 
 const char *util_format_name(unsigned int format)
 {
 	unsigned int i;
 
-        for (i = 0; i < ARRAY_SIZE(format_info); i++)
+	for (i = 0; i < ARRAY_SIZE(format_info); i++)
 		if (format_info[i].format == format)
 			return format_info[i].name;
-        return NULL;
+	return NULL;
 }
 
 unsigned int util_format_fourcc(const char *name)
@@ -273,21 +289,21 @@ const struct util_format_info *util_format_info_find(unsigned int format)
 
 static char printable_char(int c)
 {
-        return isascii(c) && isprint(c) ? c : '?';
+	return isascii(c) && isprint(c) ? c : '?';
 }
 
 const char *util_format_parse_name(unsigned int format)
 {
-        static char buf[32];
+	static char buf[32];
 
-        snprintf(buf, sizeof(buf),
-                 "%c%c%c%c %s-endian (0x%08x)",
-                 printable_char(format & 0xff),
-                 printable_char((format >> 8) & 0xff),
-                 printable_char((format >> 16) & 0xff),
-                 printable_char((format >> 24) & 0x7f),
-                 format & DRM_FORMAT_BIG_ENDIAN ? "big" : "little",
-                 format);
+	snprintf(buf, sizeof(buf),
+		 "%c%c%c%c %s-endian (0x%08x)",
+		 printable_char(format & 0xff),
+		 printable_char((format >> 8) & 0xff),
+		 printable_char((format >> 16) & 0xff),
+		 printable_char((format >> 24) & 0x7f),
+		 format & DRM_FORMAT_BIG_ENDIAN ? "big" : "little",
+		 format);
 
-        return buf;
+	return buf;
 }
