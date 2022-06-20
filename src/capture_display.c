@@ -27,7 +27,7 @@
 
 struct raw_header {
 	char sign[4];
-	int device, layer;
+	int module, layer;
 	unsigned int dummy;
 	/* offset 0x10 */
 	struct mlc_reg mlc;     /* 986 byte */
@@ -48,6 +48,10 @@ struct plane_opt {
 	int crtc_x, crtc_y;
 	unsigned int crtc_w, crtc_h;
 
+	uint32_t connector_id;
+	uint32_t encoder_id;
+	int mode_index;
+
 	struct util_image_info image;
 };
 
@@ -60,7 +64,7 @@ enum op_mode {
 #define FLAG_GAMMAN_OFF (1)
 
 struct op_arg {
-	int device;
+	int module;
 	enum mlc_layer layer;
 	const void *addr, *mem;
 	unsigned int hw_format;
@@ -108,16 +112,16 @@ static const struct format_name mlc_format_name[] = {
 
 static const char *hw_format_name(unsigned int format, int bpp);
 
-static void print_mlc_rgb(int device, int layer, struct mlcrgblayer *r)
+static void print_mlc_rgb(int module, int layer, struct mlcrgblayer *r)
 {
 	struct mlc_reg reg;
 
 	if (r == NULL) {
-		hw_mlc_dump(device, &reg);
+		hw_mlc_dump(module, &reg);
 		r = &reg.rgb[layer];
 	}
 
-	fprintf(stdout, "MLC.%d - RGB.%d\n", device, layer);
+	fprintf(stdout, "MLC.%d - RGB.%d\n", module, layer);
 	fprintf(stdout, " leftright                : 0x%08x\n",
 		r->mlcleftright);
 	fprintf(stdout, " topbottom                : 0x%08x\n",
@@ -138,16 +142,16 @@ static void print_mlc_rgb(int device, int layer, struct mlcrgblayer *r)
 	fprintf(stdout, " address                  : 0x%08x\n", r->mlcaddress);
 }
 
-static void print_mlc_yuv(int device, struct mlcyuvlayer *r)
+static void print_mlc_yuv(int module, struct mlcyuvlayer *r)
 {
 	struct mlc_reg reg;
 
 	if (r == NULL) {
-		hw_mlc_dump(device, &reg);
+		hw_mlc_dump(module, &reg);
 		r = &reg.yuv;
 	}
 
-	fprintf(stdout, "MLC.%d - YUV\n", device);
+	fprintf(stdout, "MLC.%d - YUV\n", module);
 	fprintf(stdout, " leftright                : 0x%08x\n",
 		r->mlcleftright);
 	fprintf(stdout, " topbottom                : 0x%08x\n",
@@ -175,28 +179,28 @@ static void print_mlc_yuv(int device, struct mlcyuvlayer *r)
 	fprintf(stdout, " chenh[3]                 : 0x%08x\n", r->mlcchenh[2]);
 }
 
-static void print_mlc(int device, struct mlc_reg *r)
+static void print_mlc(int module, struct mlc_reg *r)
 {
 	struct mlc_reg reg;
 	int i;
 
 	if (r == NULL) {
-		hw_mlc_dump(device, &reg);
+		hw_mlc_dump(module, &reg);
 		r = &reg;
 	}
 
-	fprintf(stdout, "MLC.%d\n", device);
+	fprintf(stdout, "MLC.%d\n", module);
 	fprintf(stdout, " controlt                 : 0x%08x\n", r->mlccontrolt);
 	fprintf(stdout, " screensize               : 0x%08x\n",
 		r->mlcscreensize);
 	fprintf(stdout, " bgcolor                  : 0x%08x\n", r->mlcbgcolor);
 
 	for (i = 0; i < 2; i++)
-		print_mlc_rgb(device, i, &r->rgb[i]);
+		print_mlc_rgb(module, i, &r->rgb[i]);
 
-	print_mlc_yuv(device, &r->yuv);
+	print_mlc_yuv(module, &r->yuv);
 
-	fprintf(stdout, "MLC.%d Gamma\n", device);
+	fprintf(stdout, "MLC.%d Gamma\n", module);
 	fprintf(stdout, " paletetable2             : 0x%08x\n",
 		r->mlcpaletetable2);
 	fprintf(stdout, " gammacont                : 0x%08x\n",
@@ -230,12 +234,10 @@ static void print_mlc(int device, struct mlc_reg *r)
 		fprintf(stdout,
 			" %-3s, %d x %d (l:%d, t:%d, r:%d, b:%d), stride:%d/%d, %dbpp, %s(0x%x)\n",
 			_getbits(r->rgb[i].mlccontrol, 5, 1) ? "ON" : "OFF",
-			_getbits(r->rgb[i].mlcleftright,  0,
-				 11) - _getbits(r->rgb[i].mlcleftright, 16,
-						11) + 1,
-			_getbits(r->rgb[i].mlctopbottom,  0,
-				 11) - _getbits(r->rgb[i].mlctopbottom, 16,
-						11) + 1,
+			_getbits(r->rgb[i].mlcleftright,  0, 11) - 
+				_getbits(r->rgb[i].mlcleftright, 16, 11) + 1,
+			_getbits(r->rgb[i].mlctopbottom,  0, 11) - 
+				_getbits(r->rgb[i].mlctopbottom, 16, 11) + 1,
 			_getbits(r->rgb[i].mlcleftright, 16, 11),
 			_getbits(r->rgb[i].mlctopbottom, 16, 11),
 			_getbits(r->rgb[i].mlcleftright,  0, 11),
@@ -249,16 +251,16 @@ static void print_mlc(int device, struct mlc_reg *r)
 			_getbits(r->rgb[i].mlccontrol, 2, 1) ? "ON" : "OFF",
 			_getbits(r->rgb[i].mlccontrol, 1, 1) ? "ON" : "OFF",
 			_getbits(r->rgb[i].mlccontrol, 0, 1) ? "ON" : "OFF");
-		if ((device == 1) && (i == 1))
+		if ((module == 1) && (i == 1))
 			break;
 	}
 	fprintf(stdout, "YUV\n");
 	fprintf(stdout, " %-3s, %d x %d (l:%d, t:%d, r:%d, b:%d), %s(0x%x)\n",
 		_getbits(r->yuv.mlccontrol, 5, 1) ? "ON" : "OFF",
-		_getbits(r->yuv.mlcleftright,  0,
-			 11) - _getbits(r->yuv.mlcleftright, 16, 11) + 1,
-		_getbits(r->yuv.mlctopbottom,  0,
-			 11) - _getbits(r->yuv.mlctopbottom, 16, 11) + 1,
+		_getbits(r->yuv.mlcleftright,  0, 11) -
+			_getbits(r->yuv.mlcleftright, 16, 11) + 1,
+		_getbits(r->yuv.mlctopbottom,  0, 11) -
+			_getbits(r->yuv.mlctopbottom, 16, 11) + 1,
 		_getbits(r->yuv.mlcleftright, 16, 11),
 		_getbits(r->yuv.mlctopbottom, 16, 11),
 		_getbits(r->yuv.mlcleftright,  0, 11),
@@ -269,18 +271,14 @@ static void print_mlc(int device, struct mlc_reg *r)
 		" stride:%d/%d/%d, scale:%d,%d, %d x %d -> %d x %d, hvfilter: %-3s/%-3s\n",
 		r->yuv.mlcvstride, r->yuv.mlcvstridecb, r->yuv.mlcvstridecr,
 		r->yuv.mlchscale, r->yuv.mlcvscale,
-		_getbits(r->yuv.mlchscale, 0, 23) *
-		(_getbits(r->yuv.mlcleftright, 0,
-			  11) - _getbits(r->yuv.mlcleftright, 16, 11) + 1) /
-		MLC_YUV_SCALE_CONSTANT,
-		_getbits(r->yuv.mlcvscale, 0, 23) *
-		(_getbits(r->yuv.mlctopbottom, 0,
-			  11) - _getbits(r->yuv.mlctopbottom, 16, 11) + 1) /
-		MLC_YUV_SCALE_CONSTANT,
-		_getbits(r->yuv.mlcleftright, 0,
-			 11) - _getbits(r->yuv.mlcleftright, 16, 11) + 1,
-		_getbits(r->yuv.mlctopbottom, 0,
-			 11) - _getbits(r->yuv.mlctopbottom, 16, 11) + 1,
+		_getbits(r->yuv.mlchscale, 0, 23) * (_getbits(r->yuv.mlcleftright, 0, 11) -
+			_getbits(r->yuv.mlcleftright, 16, 11) + 1) / MLC_YUV_SCALE_CONSTANT,
+		_getbits(r->yuv.mlcvscale, 0, 23) * (_getbits(r->yuv.mlctopbottom, 0, 11) -
+			_getbits(r->yuv.mlctopbottom, 16, 11) + 1) / MLC_YUV_SCALE_CONSTANT,
+		_getbits(r->yuv.mlcleftright, 0, 11) -
+			_getbits(r->yuv.mlcleftright, 16, 11) + 1,
+		_getbits(r->yuv.mlctopbottom, 0, 11) -
+			_getbits(r->yuv.mlctopbottom, 16, 11) + 1,
 		_getbits(r->yuv.mlchscale, 28, 2) == 0x3 ? " ON" : "OFF",
 		_getbits(r->yuv.mlcvscale, 28, 2) == 0x3 ? " ON" : "OFF");
 	fprintf(stdout, " blend:%-3s, invcolor:%-3s, tpcolor:%-3s\n",
@@ -295,11 +293,11 @@ static void print_mlc(int device, struct mlc_reg *r)
 		r->yuv.mlcchenh[2], r->yuv.mlcchenh[3]);
 	fprintf(stdout, "Gamma\n");
 	fprintf(stdout,
-		" TABLE R:%-3s, G:%-3s, B:%-3s, Region[Alphan:%-3s, YUV:%-3s, RGB:%-3s] Dither:%-3s\n",
+		" TABLE R:%-3s, G:%-3s, B:%-3s, Region[alpha:%-3s, yuv:%-3s, rgb:%-3s] Dither:%-3s\n",
 		_getbits(r->mlcgammacont,  2, 2) == 3 ? "ON" : "OFF",
 		_getbits(r->mlcgammacont,  8, 2) == 3 ? "ON" : "OFF",
 		_getbits(r->mlcgammacont, 10, 2) == 3 ? "ON" : "OFF",
-		_getbits(r->mlcgammacont,  5, 1) ? "RGB" : "YUV",
+		_getbits(r->mlcgammacont,  5, 1) ? "YUV": "RGB",
 		_getbits(r->mlcgammacont,  4, 1) ? "ON" : "OFF",
 		_getbits(r->mlcgammacont,  1, 1) ? "ON" : "OFF",
 		_getbits(r->mlcgammacont,  0, 1) ? "ON" : "OFF");
@@ -386,18 +384,34 @@ static unsigned int format_convert_yuv(unsigned int format,
 	return 0;
 }
 
-static int get_plane_ids(struct op_arg *op, struct device *dev)
+static int get_drm_ids(struct op_arg *op, struct device *dev)
 {
 	struct plane_opt *p = &op->plane;
 	int counts = 0;
 	int i;
+
+	p->mode_index = 0;
+
+	/* connector id */
+	for (i = 0; i < (int)dev->resources->res->count_connectors; i++) {
+		drmModeConnector *connector = dev->resources->connectors[i].connector;
+		if (i == op->module) {
+			if (!connector)
+				return -EINVAL;
+
+			p->connector_id = connector->connector_id;
+			p->encoder_id = connector->encoder_id;
+			break;
+		}
+
+	}
 
 	/* crtc id */
 	for (i = 0; i < dev->resources->res->count_crtcs; i++) {
 		struct crtc *_crtc = &dev->resources->crtcs[i];
 		drmModeCrtc *crtc = _crtc->crtc;
 
-		if (i == op->device) {
+		if (i == op->module) {
 			if (!crtc)
 				return -EINVAL;
 
@@ -414,8 +428,7 @@ static int get_plane_ids(struct op_arg *op, struct device *dev)
 		struct plane *_plane = &dev->resources->planes[i];
 		drmModePlane *plane = _plane->plane;
 
-
-		if (!(plane->possible_crtcs & (1 << op->device)))
+		if (!(plane->possible_crtcs & (1 << op->module)))
 			continue;
 
 		if (counts == (int)op->layer) {
@@ -514,13 +527,13 @@ static int set_plane_rect(struct op_arg *op, struct raw_header *header)
 		p->crtc_h = p->src_h;
 	}
 
-
 	return 0;
 }
 
 static int set_mlc_property(struct op_arg *op, struct mlc_reg *reg)
 {
 	struct mlc_reg *r = (struct mlc_reg *)op->mem;
+	int i;
 
 	/* top */
 	/* - priority */
@@ -529,22 +542,27 @@ static int set_mlc_property(struct op_arg *op, struct mlc_reg *reg)
 
 	/* rgb0/1 */
 	/* - blend, invcolor, tpcolor */
-	writel_bits(reg->rgb[0].mlccontrol, &r->rgb[0].mlccontrol, 0, 3);
-	writel(reg->rgb[0].mlctpcolor, &r->rgb[0].mlctpcolor);
-	writel(reg->rgb[0].mlcinvcolor, &r->rgb[0].mlcinvcolor);
-	writel_bits(reg->rgb[1].mlccontrol, &r->rgb[1].mlccontrol, 0, 3);
-	writel(reg->rgb[1].mlctpcolor, &r->rgb[1].mlctpcolor);
-	writel(reg->rgb[1].mlcinvcolor, &r->rgb[1].mlcinvcolor);
+	for (i = 0; i < 2; i++) {
+		if (!readl_bits(&r->rgb[i].mlccontrol, 5, 1))
+				continue;
+		writel_bits(reg->rgb[i].mlccontrol, &r->rgb[i].mlccontrol, 0, 7);
+		writel(reg->rgb[i].mlctpcolor, &r->rgb[i].mlctpcolor);
+		writel(reg->rgb[i].mlcinvcolor, &r->rgb[i].mlcinvcolor);
+		writel_bits(1, &r->rgb[i].mlccontrol, 4, 1);
+	}
 
 	/* video */
 	/* - blend */
-	writel_bits(reg->yuv.mlccontrol, &r->yuv.mlccontrol, 2, 1);
-	writel(reg->yuv.mlcinvcolor, &r->yuv.mlcinvcolor);
-	writel(reg->yuv.mlcluenh, &r->yuv.mlcluenh);
-	writel(reg->yuv.mlcchenh[0], &r->yuv.mlcchenh[0]);
-	writel(reg->yuv.mlcchenh[1], &r->yuv.mlcchenh[1]);
-	writel(reg->yuv.mlcchenh[2], &r->yuv.mlcchenh[2]);
-	writel(reg->yuv.mlcchenh[3], &r->yuv.mlcchenh[3]);
+	if (readl_bits(&r->yuv.mlccontrol, 5, 1)) {
+		writel_bits(reg->yuv.mlccontrol, &r->yuv.mlccontrol, 2, 1);
+		writel(reg->yuv.mlcinvcolor, &r->yuv.mlcinvcolor);
+		writel(reg->yuv.mlcluenh, &r->yuv.mlcluenh);
+		writel(reg->yuv.mlcchenh[0], &r->yuv.mlcchenh[0]);
+		writel(reg->yuv.mlcchenh[1], &r->yuv.mlcchenh[1]);
+		writel(reg->yuv.mlcchenh[2], &r->yuv.mlcchenh[2]);
+		writel(reg->yuv.mlcchenh[3], &r->yuv.mlcchenh[3]);
+		writel_bits(1, &r->yuv.mlccontrol, 4, 1);
+	}
 
 	/* gamma */
 	if (op->flags & FLAG_GAMMAN_OFF)
@@ -564,6 +582,46 @@ static int set_plane_image(struct op_arg *op, struct raw_header *header)
 	return 0;
 }
 
+static drmModeModeInfo *find_crtc_and_mode(struct device *dev,
+						int connector_id, int index,
+						int vrefresh)
+{
+	drmModeModeInfo *mode = drm_connector_find_mode(dev,
+					connector_id, index, vrefresh);
+	if (mode == NULL) {
+		fprintf(stderr,
+			"failed to find mode index.%d for connector.%d\n",
+			index, connector_id);
+		return NULL;
+	}
+
+	return mode;
+}
+
+static int drm_set_crtc(struct device *dev, struct plane_opt *p,
+			struct crtc *crtc)
+{
+	int ret = 0;
+	drmModeModeInfo *mode = find_crtc_and_mode(dev,
+					p->connector_id, p->mode_index, 0);
+
+	if (p->encoder_id == 0) {
+		fprintf(stdout, "set crtc.%d. connector.%d\n",
+				crtc->crtc->crtc_id, p->connector_id);
+
+		ret = drmModeSetCrtc(dev->fd, crtc->crtc->crtc_id,
+				p->fb_id, 0, 0, &p->connector_id, 1, mode);
+		if (ret) {
+			fprintf(stderr, "failed to set mode: %s\n", strerror(errno));
+			return -1;
+		}
+		 /* XXX: Actually check if this is needed */
+		drmModeDirtyFB(dev->fd, p->fb_id, NULL, 0);
+	}
+
+	return 0;
+}
+
 static int drm_set_plane(struct device *dev, struct plane_opt *p)
 {
 	drmModePlane *ovr = NULL;
@@ -575,6 +633,7 @@ static int drm_set_plane(struct device *dev, struct plane_opt *p)
 	struct crtc *crtc = NULL;
 	unsigned int pipe;
 	unsigned int i;
+	int ret;
 
 	/* Find an unused plane which can be connected to our CRTC. Find the
 	 * CRTC index first, then iterate over available planes.
@@ -645,6 +704,12 @@ static int drm_set_plane(struct device *dev, struct plane_opt *p)
 	       crtc_x, crtc_y, crtc_w, crtc_h,
 	       p->src_x, p->src_y, p->src_w, p->src_h);
 
+	ret = drm_set_crtc(dev, p, crtc);
+	if (ret) {
+		fprintf(stderr, "failed to set crt !!!\n");
+		return -1;
+	}
+
 	/* note src coords (last 4 args) are in Q16 format */
 	if (drmModeSetPlane(dev->fd, plane_id, crtc->crtc->crtc_id, p->fb_id,
 			    plane_flags, crtc_x, crtc_y, crtc_w, crtc_h,
@@ -697,13 +762,13 @@ static int raw_capture_rgb(struct op_arg *op, struct mlcrgblayer *reg)
 
 	fprintf(stdout,
 		"get mlc.%d, rgb.%d %s(0x%x), %d,%d, %d x %d, line: %d, size: %dbyte\n",
-		op->device, op->layer, hw_format_name(format, bpp),
+		op->module, op->layer, hw_format_name(format, bpp),
 		format, x, y, width, height, linestride, size);
 
 	mem = iomem_map(addr, size, mapped);
 	if (mem == NULL) {
-		fprintf(stderr, "Fail, device %d, map %p\n",
-			op->device, addr);
+		fprintf(stderr, "Fail, module %d, map %p\n",
+			op->module, addr);
 		goto __exit_rgb;
 	}
 
@@ -753,10 +818,10 @@ static int raw_caputre_yuv(struct op_arg *op, struct mlcyuvlayer *reg)
 
 	fprintf(stdout,
 		"get mlc.%d, yuv.%d %s(0x%x), %d,%d, %d x %d, line: %d\n",
-		op->device, op->layer, hw_format_name(format, 8),
+		op->module, op->layer, hw_format_name(format, 8),
 		format, x, y, width, height, reg->mlcvstride);
 	fprintf(stdout, "get mlc.%d, yuv.%d scale(h:%s,%x, v:%s(%x), %d x %d\n",
-		op->device, op->layer,
+		op->module, op->layer,
 		_getbits(reg->mlchscale, 28, 2) == 3 ? "on" : "off",
 		_getbits(reg->mlchscale, 28, 2),
 		_getbits(reg->mlcvscale, 28, 2) == 3 ? "on" : "off",
@@ -788,8 +853,8 @@ static int raw_caputre_yuv(struct op_arg *op, struct mlcyuvlayer *reg)
 
 		mem[i] = iomem_map(addr, size[i], mapped[i]);
 		if (mem[i] == NULL) {
-			fprintf(stderr, "Fail, device %d, map %p\n",
-				op->device, addr);
+			fprintf(stderr, "Fail, module %d, map %p\n",
+				op->module, addr);
 			ret = -EINVAL;
 			goto __exit;
 		}
@@ -835,10 +900,10 @@ static int raw_image_header(struct op_arg *op, struct raw_header *header)
 		header->sign[2] = sign[2];
 		header->sign[3] = sign[3];
 
-		header->device = op->device;
+		header->module = op->module;
 		header->layer = op->layer;
 
-		hw_mlc_dump(op->device, &header->mlc);
+		hw_mlc_dump(op->module, &header->mlc);
 
 		fwrite((void *)header, 1, RAW_HEADER_SIZE, fp);
 	} else {
@@ -847,7 +912,7 @@ static int raw_image_header(struct op_arg *op, struct raw_header *header)
 			fprintf(stderr, "Not found signature !!!\n");
 			return -EINVAL;
 		}
-		op->device = header->device;
+		op->module = header->module;
 		op->layer = header->layer;
 	}
 
@@ -913,12 +978,12 @@ static int update_device(struct op_arg *op)
 		goto __exit_update;
 	}
 
-	ret = get_plane_ids(op, &dev);
+	ret = get_drm_ids(op, &dev);
 	if (ret)
 		goto __exit_update;
 
 	fprintf(stdout, "set mlc.%d layer.%d -> crt.%d plane.%d\n",
-		op->device, op->layer,
+		op->module, op->layer,
 		op->plane.crtc_id, op->plane.plane_id);
 
 	ret = format_to_fourcc(op, header);
@@ -928,8 +993,6 @@ static int update_device(struct op_arg *op)
 	ret = set_plane_rect(op, header);
 	if (ret)
 		goto __exit_update;
-
-	set_mlc_property(op, &header->mlc);
 
 	fprintf(stdout, "src %d,%d, %d x %d %dbpp, %s(0x%x) - %s(0x%x)\n",
 		op->plane.src_x, op->plane.src_y, op->plane.src_w,
@@ -944,6 +1007,8 @@ static int update_device(struct op_arg *op)
 		goto __exit_update;
 
 	drm_set_plane(&dev, p);
+
+	set_mlc_property(op, &header->mlc);
 
 	/* wait */
 	getchar();
@@ -966,13 +1031,14 @@ static int print_device(struct op_arg *op)
 	switch (op->layer) {
 	case mlc_layer_rgb0:
 	case mlc_layer_rgb1:
-		print_mlc_rgb(op->device, op->layer, NULL);
+		print_mlc_rgb(op->module, op->layer, NULL);
 		break;
 	case mlc_layer_video:
-		print_mlc_yuv(op->device, NULL);
+		print_mlc_yuv(op->module, NULL);
 		break;
+	case mlc_layer_unknown:
 	default:
-		print_mlc(op->device, NULL);
+		print_mlc(op->module, NULL);
 		break;
 	}
 	return 0;
@@ -998,9 +1064,9 @@ static int parse_file(struct op_arg *op)
 		free(header);
 		return -EINVAL;
 	}
-	fprintf(stdout, "MLC.%d - Layer.%d\n\n", op->device, op->layer);
+	fprintf(stdout, "MLC.%d - Layer.%d\n\n", op->module, op->layer);
 
-	print_mlc(op->device, &header->mlc);
+	print_mlc(op->module, &header->mlc);
 
 	free(header);
 
@@ -1011,7 +1077,7 @@ static int parse_arg(char *arg, struct op_arg *op)
 {
 	char *end;
 
-	op->device = strtoul(arg, &end, 10);
+	op->module = strtoul(arg, &end, 10);
 	if (*end != ',')
 		return op->mode == op_mode_print ? 0 : -EINVAL;
 
@@ -1097,23 +1163,23 @@ int main(int argc, char **argv)
 		goto __exit;
 	}
 
-	addr = hw_mlc_get_base(op->device);
+	addr = hw_mlc_get_base(op->module);
 	if (addr == NULL) {
-		fprintf(stderr, "Fail, not support device.%d\n",
-			op->device);
+		fprintf(stderr, "Fail, not support module.%d\n",
+			op->module);
 		ret = -EINVAL;
 		goto __exit;
 	}
-	size = hw_mlc_get_size(op->device);
+	size = hw_mlc_get_size(op->module);
 
 	mem = iomem_map(addr, size, NULL);
 	if (mem == NULL) {
-		fprintf(stderr, "Fail, device %d, map %p\n",
-			op->device, addr);
+		fprintf(stderr, "Fail, module %d, map %p\n",
+			op->module, addr);
 		ret = -EINVAL;
 		goto __exit;
 	}
-	hw_mlc_set_base(op->device, mem);
+	hw_mlc_set_base(op->module, mem);
 
 	op->addr = addr;
 	op->mem = mem;

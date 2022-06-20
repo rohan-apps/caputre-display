@@ -369,6 +369,62 @@ const char *drm_lookup_connector_type_name(unsigned int type)
 				    ARRAY_SIZE(connector_type_names));
 }
 
+drmModeEncoder *drm_encoder_get_by_id(struct device *dev, uint32_t id)
+{
+	drmModeEncoder *encoder;
+	int i;
+
+	for (i = 0; i < dev->resources->res->count_encoders; i++) {
+		encoder = dev->resources->encoders[i].encoder;
+		if (encoder && encoder->encoder_id == id)
+			return encoder;
+	}
+
+	return NULL;
+}
+
+drmModeConnector *drm_connector_get_by_id(struct device *dev, uint32_t id)
+{
+	drmModeConnector *connector;
+	int i;
+
+	for (i = 0; i < dev->resources->res->count_connectors; i++) {
+		connector = dev->resources->connectors[i].connector;
+		if (connector && connector->connector_id == id)
+			return connector;
+	}
+
+	return NULL;
+}
+drmModeModeInfo *
+drm_connector_find_mode(struct device *dev, uint32_t con_id, int index,
+			const unsigned int vrefresh)
+{
+	drmModeConnector *connector;
+	drmModeModeInfo *mode;
+	int i;
+
+	connector = drm_connector_get_by_id(dev, con_id);
+	if (!connector || !connector->count_modes)
+		return NULL;
+
+	for (i = 0; i < connector->count_modes; i++) {
+		mode = &connector->modes[i];
+		if (index == i) {
+			/* If the vertical refresh frequency is not specified then return the
+			 * first mode that match with the name. Else, return the mode that match
+			 * the name and the specified vertical refresh frequency.
+			 */
+			if (vrefresh == 0)
+				return mode;
+			else if (mode->vrefresh == vrefresh)
+				return mode;
+		}
+	}
+
+	return NULL;
+}
+
 static const char * const modules[] = {
 	"i915",
 	"amdgpu",
