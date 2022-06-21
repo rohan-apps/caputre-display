@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define NUMBER_OF_MLC_MODULE            2
+#define NUMBER_OF_MLC_LAYER		3
 #define PHY_BASEADDR_MLC0               0xC0102000
 #define PHY_BASEADDR_MLC1               0xC0102400
 #define MLC_YUV_SCALE_CONSTANT          2048
@@ -129,12 +130,13 @@ enum mlc_layer {
 	mlc_layer_unknown,
 };
 
-const void *hw_mlc_get_base(int dev);
-unsigned int hw_mlc_get_size(int dev);
-int hw_mlc_set_base(int dev, void *base);
+int hw_reg_set_base(int module, void *base);
+const void *hw_reg_get_base(int module);
+unsigned int hw_reg_get_length(int module);
+int hw_reg_get_module_num(void);
+int hw_reg_get_layer_num(int module);
 
-void hw_mlc_save(int dev, struct mlc_reg *mlc);
-void hw_mlc_dump(int dev, struct mlc_reg *mlc);
+void hw_reg_dump(int dev, struct mlc_reg *mlc);
 
 
 #endif

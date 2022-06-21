@@ -1,8 +1,8 @@
 #ifndef __IO_MAP_H__
 #define __IO MAP_H__
 
-#define	IO_MMAP_DEVICE	        "/dev/mem"
-#define	IO_MMAP_ALIGN	        (4096) 
+#define	IO_MMAP_DEVICE          "/dev/mem"
+#define	IO_MMAP_ALIGN           (4096)
 #define MAP_ALIGN_ADDR(p)       (p & ~((IO_MMAP_ALIGN) - 1))
 #define MAP_ALIGN_SIZE(s)       ((s & ~((IO_MMAP_ALIGN) - 1)) + IO_MMAP_ALIGN)
 

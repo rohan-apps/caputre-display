@@ -10,46 +10,53 @@ struct mlc_base {
 	void *virt;
 };
 
-struct mlc_base __mlc[NUMBER_OF_MLC_MODULE] = {
+static struct mlc_base __mlc[NUMBER_OF_MLC_MODULE] = {
 	[0] = { (const void *)PHY_BASEADDR_MLC0, NULL },
 	[1] = { (const void *)PHY_BASEADDR_MLC1, NULL },
 };
 
-void hw_mlc_dump(int dev, struct mlc_reg *mlc)
+void hw_reg_dump(int module, struct mlc_reg *mlc)
 {
 	struct mlc_reg *reg;
 
-	assert(__mlc[dev].virt);
-	reg = (struct mlc_reg *)__mlc[dev].virt;
+	assert(__mlc[module].virt);
+	reg = (struct mlc_reg *)__mlc[module].virt;
 
 	memcpy(mlc, reg, sizeof(struct mlc_reg));
 }
 
-void hw_mlc_save(int dev, struct mlc_reg *mlc)
+int hw_reg_get_module_num(void)
 {
-	assert(__mlc[dev].virt);
+	return NUMBER_OF_MLC_MODULE;
 }
 
-unsigned int hw_mlc_get_size(int dev)
+int hw_reg_get_layer_num(int module)
 {
-	if (dev >= NUMBER_OF_MLC_MODULE)
-		return 0;
+	return NUMBER_OF_MLC_LAYER;
+}
+
+unsigned int hw_reg_get_length(int module)
+{
+	if (module >= NUMBER_OF_MLC_MODULE)
+		return -EINVAL;
+
 	return sizeof(struct mlc_reg);
 }
 
-const void *hw_mlc_get_base(int dev)
+const void *hw_reg_get_base(int module)
 {
-	if (dev >= NUMBER_OF_MLC_MODULE)
+	if (module >= NUMBER_OF_MLC_MODULE)
 		return NULL;
 
-	return __mlc[dev].phys;
+	return __mlc[module].phys;
 }
 
-int hw_mlc_set_base(int dev, void *base)
+int hw_reg_set_base(int module, void *base)
 {
-	if (dev >= NUMBER_OF_MLC_MODULE)
+	if (module >= NUMBER_OF_MLC_MODULE)
 		return -EINVAL;
 
-	__mlc[dev].virt = (struct __mlc *)base;
+	__mlc[module].virt = (struct __mlc *)base;
+
 	return 0;
 }

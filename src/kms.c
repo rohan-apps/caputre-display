@@ -376,7 +376,7 @@ drmModeEncoder *drm_encoder_get_by_id(struct device *dev, uint32_t id)
 
 	for (i = 0; i < dev->resources->res->count_encoders; i++) {
 		encoder = dev->resources->encoders[i].encoder;
-		if (encoder && encoder->encoder_id == id)
+		if (encoder && (encoder->encoder_id == id))
 			return encoder;
 	}
 
@@ -390,15 +390,14 @@ drmModeConnector *drm_connector_get_by_id(struct device *dev, uint32_t id)
 
 	for (i = 0; i < dev->resources->res->count_connectors; i++) {
 		connector = dev->resources->connectors[i].connector;
-		if (connector && connector->connector_id == id)
+		if (connector && (connector->connector_id == id))
 			return connector;
 	}
 
 	return NULL;
 }
-drmModeModeInfo *
-drm_connector_find_mode(struct device *dev, uint32_t con_id, int index,
-			const unsigned int vrefresh)
+drmModeModeInfo *drm_connector_find_mode(struct device *dev, uint32_t con_id, int index,
+					 const unsigned int vrefresh)
 {
 	drmModeConnector *connector;
 	drmModeModeInfo *mode;

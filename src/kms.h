@@ -98,9 +98,8 @@ const char *drm_lookup_connector_status_name(unsigned int type);
 const char *drm_lookup_connector_type_name(unsigned int type);
 drmModeEncoder *drm_encoder_get_by_id(struct device *dev, uint32_t id);
 drmModeConnector *drm_connector_get_by_id(struct device *dev, uint32_t id);
-drmModeModeInfo *
-drm_connector_find_mode(struct device *dev, uint32_t con_id, int index,
-			const unsigned int vrefresh);
+drmModeModeInfo *drm_connector_find_mode(struct device *dev, uint32_t con_id, int index,
+					 const unsigned int vrefresh);
 
 void drm_free_resources(struct resources *res);
 struct resources *drm_get_resources(struct device *dev);

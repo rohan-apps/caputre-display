@@ -117,7 +117,7 @@ static void print_mlc_rgb(int module, int layer, struct mlcrgblayer *r)
 	struct mlc_reg reg;
 
 	if (r == NULL) {
-		hw_mlc_dump(module, &reg);
+		hw_reg_dump(module, &reg);
 		r = &reg.rgb[layer];
 	}
 
@@ -147,7 +147,7 @@ static void print_mlc_yuv(int module, struct mlcyuvlayer *r)
 	struct mlc_reg reg;
 
 	if (r == NULL) {
-		hw_mlc_dump(module, &reg);
+		hw_reg_dump(module, &reg);
 		r = &reg.yuv;
 	}
 
@@ -185,7 +185,7 @@ static void print_mlc(int module, struct mlc_reg *r)
 	int i;
 
 	if (r == NULL) {
-		hw_mlc_dump(module, &reg);
+		hw_reg_dump(module, &reg);
 		r = &reg;
 	}
 
@@ -234,10 +234,10 @@ static void print_mlc(int module, struct mlc_reg *r)
 		fprintf(stdout,
 			" %-3s, %d x %d (l:%d, t:%d, r:%d, b:%d), stride:%d/%d, %dbpp, %s(0x%x)\n",
 			_getbits(r->rgb[i].mlccontrol, 5, 1) ? "ON" : "OFF",
-			_getbits(r->rgb[i].mlcleftright,  0, 11) - 
-				_getbits(r->rgb[i].mlcleftright, 16, 11) + 1,
-			_getbits(r->rgb[i].mlctopbottom,  0, 11) - 
-				_getbits(r->rgb[i].mlctopbottom, 16, 11) + 1,
+			_getbits(r->rgb[i].mlcleftright,  0, 11) -
+			_getbits(r->rgb[i].mlcleftright, 16, 11) + 1,
+			_getbits(r->rgb[i].mlctopbottom,  0, 11) -
+			_getbits(r->rgb[i].mlctopbottom, 16, 11) + 1,
 			_getbits(r->rgb[i].mlcleftright, 16, 11),
 			_getbits(r->rgb[i].mlctopbottom, 16, 11),
 			_getbits(r->rgb[i].mlcleftright,  0, 11),
@@ -258,9 +258,9 @@ static void print_mlc(int module, struct mlc_reg *r)
 	fprintf(stdout, " %-3s, %d x %d (l:%d, t:%d, r:%d, b:%d), %s(0x%x)\n",
 		_getbits(r->yuv.mlccontrol, 5, 1) ? "ON" : "OFF",
 		_getbits(r->yuv.mlcleftright,  0, 11) -
-			_getbits(r->yuv.mlcleftright, 16, 11) + 1,
+		_getbits(r->yuv.mlcleftright, 16, 11) + 1,
 		_getbits(r->yuv.mlctopbottom,  0, 11) -
-			_getbits(r->yuv.mlctopbottom, 16, 11) + 1,
+		_getbits(r->yuv.mlctopbottom, 16, 11) + 1,
 		_getbits(r->yuv.mlcleftright, 16, 11),
 		_getbits(r->yuv.mlctopbottom, 16, 11),
 		_getbits(r->yuv.mlcleftright,  0, 11),
@@ -271,14 +271,12 @@ static void print_mlc(int module, struct mlc_reg *r)
 		" stride:%d/%d/%d, scale:%d,%d, %d x %d -> %d x %d, hvfilter: %-3s/%-3s\n",
 		r->yuv.mlcvstride, r->yuv.mlcvstridecb, r->yuv.mlcvstridecr,
 		r->yuv.mlchscale, r->yuv.mlcvscale,
-		_getbits(r->yuv.mlchscale, 0, 23) * (_getbits(r->yuv.mlcleftright, 0, 11) -
-			_getbits(r->yuv.mlcleftright, 16, 11) + 1) / MLC_YUV_SCALE_CONSTANT,
-		_getbits(r->yuv.mlcvscale, 0, 23) * (_getbits(r->yuv.mlctopbottom, 0, 11) -
-			_getbits(r->yuv.mlctopbottom, 16, 11) + 1) / MLC_YUV_SCALE_CONSTANT,
-		_getbits(r->yuv.mlcleftright, 0, 11) -
-			_getbits(r->yuv.mlcleftright, 16, 11) + 1,
-		_getbits(r->yuv.mlctopbottom, 0, 11) -
-			_getbits(r->yuv.mlctopbottom, 16, 11) + 1,
+		_getbits(r->yuv.mlchscale, 0, 23) *
+		(_getbits(r->yuv.mlcleftright, 0, 11) - _getbits(r->yuv.mlcleftright, 16, 11) + 1) / MLC_YUV_SCALE_CONSTANT,
+		_getbits(r->yuv.mlcvscale, 0, 23) *
+		(_getbits(r->yuv.mlctopbottom, 0, 11) - _getbits(r->yuv.mlctopbottom, 16, 11) + 1) / MLC_YUV_SCALE_CONSTANT,
+		_getbits(r->yuv.mlcleftright, 0, 11) - _getbits(r->yuv.mlcleftright, 16, 11) + 1,
+		_getbits(r->yuv.mlctopbottom, 0, 11) - _getbits(r->yuv.mlctopbottom, 16, 11) + 1,
 		_getbits(r->yuv.mlchscale, 28, 2) == 0x3 ? " ON" : "OFF",
 		_getbits(r->yuv.mlcvscale, 28, 2) == 0x3 ? " ON" : "OFF");
 	fprintf(stdout, " blend:%-3s, invcolor:%-3s, tpcolor:%-3s\n",
@@ -297,7 +295,7 @@ static void print_mlc(int module, struct mlc_reg *r)
 		_getbits(r->mlcgammacont,  2, 2) == 3 ? "ON" : "OFF",
 		_getbits(r->mlcgammacont,  8, 2) == 3 ? "ON" : "OFF",
 		_getbits(r->mlcgammacont, 10, 2) == 3 ? "ON" : "OFF",
-		_getbits(r->mlcgammacont,  5, 1) ? "YUV": "RGB",
+		_getbits(r->mlcgammacont,  5, 1) ? "YUV" : "RGB",
 		_getbits(r->mlcgammacont,  4, 1) ? "ON" : "OFF",
 		_getbits(r->mlcgammacont,  1, 1) ? "ON" : "OFF",
 		_getbits(r->mlcgammacont,  0, 1) ? "ON" : "OFF");
@@ -483,29 +481,20 @@ static int set_plane_rect(struct op_arg *op, struct raw_header *header)
 
 		x = _getbits(r->mlcleftright, 16, 12);
 		y = _getbits(r->mlctopbottom, 16, 12);
-		/* Note. get width with scale factor */
-		w = _getbits(r->mlcleftright, 0, 11) - _getbits(r->mlcleftright,
-								16, 11) + 1;
-		h = _getbits(r->mlctopbottom, 0, 11) - _getbits(r->mlctopbottom,
-								16, 11) + 1;
-
+		w = _getbits(r->mlcleftright, 0, 11) - _getbits(r->mlcleftright, 16, 11) + 1;
+		h = _getbits(r->mlctopbottom, 0, 11) - _getbits(r->mlctopbottom, 16, 11) + 1;
 		/* Note. get width with stride for the aligned image */
 #if 0
-		p->src_w =
-			_getbits(r->mlchscale, 0,
-				 23) * w / MLC_YUV_SCALE_CONSTANT;
+		p->src_w = _getbits(r->mlchscale, 0, 23) * w / MLC_YUV_SCALE_CONSTANT;
 #endif
 		p->src_x = 0, p->src_y = 0;
 		p->src_w = r->mlcvstride / div;
-		p->src_h =
-			_getbits(r->mlcvscale, 0,
-				 23) * h / MLC_YUV_SCALE_CONSTANT;
+		p->src_h = _getbits(r->mlcvscale, 0, 23) * h / MLC_YUV_SCALE_CONSTANT;
 
 		p->crtc_x = x,
 		p->crtc_y = y;
 		p->crtc_w = w;
 		p->crtc_h = h;
-
 	} else {
 		struct mlcrgblayer *r = &header->mlc.rgb[op->layer];
 
@@ -513,13 +502,11 @@ static int set_plane_rect(struct op_arg *op, struct raw_header *header)
 		y = _getbits(r->mlctopbottom, 16, 12);
 		/* Note. get width with stride for the aligned image */
 #if 0
-		p->src_w = _getbits(r->mlcleftright, 0, 11) -
-			   _getbits(r->mlcleftright, 16, 11) + 1;
+		p->src_w = _getbits(r->mlcleftright, 0, 11) - _getbits(r->mlcleftright, 16, 11) + 1;
 #endif
 		p->src_x = 0, p->src_y = 0;
 		p->src_w = r->mlcvstride / r->mlchstride;
-		p->src_h = _getbits(r->mlctopbottom, 0, 11) -
-			   _getbits(r->mlctopbottom, 16, 11) + 1;
+		p->src_h = _getbits(r->mlctopbottom, 0, 11) - _getbits(r->mlctopbottom, 16, 11) + 1;
 
 		p->crtc_x = x,
 		p->crtc_y = y;
@@ -535,24 +522,21 @@ static int set_mlc_property(struct op_arg *op, struct mlc_reg *reg)
 	struct mlc_reg *r = (struct mlc_reg *)op->mem;
 	int i;
 
-	/* top */
-	/* - priority */
+	/* top : priority */
 	writel_bits(reg->mlccontrolt, &r->mlccontrolt, 8, 2);
 	writel(reg->mlcbgcolor, &r->mlcbgcolor);
 
-	/* rgb0/1 */
-	/* - blend, invcolor, tpcolor */
+	/* rgb0/1 : blend, invcolor, tpcolor */
 	for (i = 0; i < 2; i++) {
 		if (!readl_bits(&r->rgb[i].mlccontrol, 5, 1))
-				continue;
+			continue;
 		writel_bits(reg->rgb[i].mlccontrol, &r->rgb[i].mlccontrol, 0, 7);
 		writel(reg->rgb[i].mlctpcolor, &r->rgb[i].mlctpcolor);
 		writel(reg->rgb[i].mlcinvcolor, &r->rgb[i].mlcinvcolor);
 		writel_bits(1, &r->rgb[i].mlccontrol, 4, 1);
 	}
 
-	/* video */
-	/* - blend */
+	/* video : blend */
 	if (readl_bits(&r->yuv.mlccontrol, 5, 1)) {
 		writel_bits(reg->yuv.mlccontrol, &r->yuv.mlccontrol, 2, 1);
 		writel(reg->yuv.mlcinvcolor, &r->yuv.mlcinvcolor);
@@ -565,8 +549,10 @@ static int set_mlc_property(struct op_arg *op, struct mlc_reg *reg)
 	}
 
 	/* gamma */
-	if (op->flags & FLAG_GAMMAN_OFF)
+	if (op->flags & FLAG_GAMMAN_OFF) {
 		writel(0, &r->mlcgammacont);
+		writel_bits(1, &r->mlccontrolt, 3, 1);
+	}
 
 	return 0;
 }
@@ -583,11 +569,12 @@ static int set_plane_image(struct op_arg *op, struct raw_header *header)
 }
 
 static drmModeModeInfo *find_crtc_and_mode(struct device *dev,
-						int connector_id, int index,
-						int vrefresh)
+					   int connector_id, int index,
+					   int vrefresh)
 {
 	drmModeModeInfo *mode = drm_connector_find_mode(dev,
-					connector_id, index, vrefresh);
+							connector_id, index, vrefresh);
+
 	if (mode == NULL) {
 		fprintf(stderr,
 			"failed to find mode index.%d for connector.%d\n",
@@ -603,19 +590,19 @@ static int drm_set_crtc(struct device *dev, struct plane_opt *p,
 {
 	int ret = 0;
 	drmModeModeInfo *mode = find_crtc_and_mode(dev,
-					p->connector_id, p->mode_index, 0);
+						   p->connector_id, p->mode_index, 0);
 
 	if (p->encoder_id == 0) {
 		fprintf(stdout, "set crtc.%d. connector.%d\n",
-				crtc->crtc->crtc_id, p->connector_id);
+			crtc->crtc->crtc_id, p->connector_id);
 
 		ret = drmModeSetCrtc(dev->fd, crtc->crtc->crtc_id,
-				p->fb_id, 0, 0, &p->connector_id, 1, mode);
+				     p->fb_id, 0, 0, &p->connector_id, 1, mode);
 		if (ret) {
 			fprintf(stderr, "failed to set mode: %s\n", strerror(errno));
 			return -1;
 		}
-		 /* XXX: Actually check if this is needed */
+		/* XXX: Actually check if this is needed */
 		drmModeDirtyFB(dev->fd, p->fb_id, NULL, 0);
 	}
 
@@ -808,11 +795,8 @@ static int raw_caputre_yuv(struct op_arg *op, struct mlcyuvlayer *reg)
 	div = format == mlc_yuvfmt_yuyv ? 2 : 1;
 	width = reg->mlcvstride / div;
 	/* Note. get width with scale factor */
-	height = _getbits(reg->mlctopbottom, 0, 11) -
-		 _getbits(reg->mlctopbottom, 16, 11) + 1;
-	height =
-		_getbits(reg->mlcvscale, 0,
-			 23) * height / MLC_YUV_SCALE_CONSTANT;
+	height = _getbits(reg->mlctopbottom, 0, 11) - _getbits(reg->mlctopbottom, 16, 11) + 1;
+	height = _getbits(reg->mlcvscale, 0, 23) * height / MLC_YUV_SCALE_CONSTANT;
 	x = _getbits(reg->mlcleftright, 16, 12);
 	y = _getbits(reg->mlctopbottom, 16, 12);
 
@@ -903,7 +887,7 @@ static int raw_image_header(struct op_arg *op, struct raw_header *header)
 		header->module = op->module;
 		header->layer = op->layer;
 
-		hw_mlc_dump(op->module, &header->mlc);
+		hw_reg_dump(op->module, &header->mlc);
 
 		fwrite((void *)header, 1, RAW_HEADER_SIZE, fp);
 	} else {
@@ -1078,11 +1062,22 @@ static int parse_arg(char *arg, struct op_arg *op)
 	char *end;
 
 	op->module = strtoul(arg, &end, 10);
+	if (op->module >= hw_reg_get_module_num()) {
+		fprintf(stderr, "Fail, not support module.%d\n", op->module);
+		return -EINVAL;
+	}
+
 	if (*end != ',')
 		return op->mode == op_mode_print ? 0 : -EINVAL;
 
 	arg = end +  1;
 	op->layer = strtoul(arg, &end, 10);
+	if (op->layer >= hw_reg_get_layer_num(op->module)) {
+		fprintf(stderr, "Fail, not support module.%d - layer.%d\n",
+			op->module, op->layer);
+		return -EINVAL;
+	}
+
 	if (*end != ',')
 		return op->mode == op_mode_print ? 0 : -EINVAL;
 
@@ -1163,14 +1158,13 @@ int main(int argc, char **argv)
 		goto __exit;
 	}
 
-	addr = hw_mlc_get_base(op->module);
+	addr = hw_reg_get_base(op->module);
 	if (addr == NULL) {
-		fprintf(stderr, "Fail, not support module.%d\n",
-			op->module);
+		fprintf(stderr, "Fail, not support module.%d\n", op->module);
 		ret = -EINVAL;
 		goto __exit;
 	}
-	size = hw_mlc_get_size(op->module);
+	size = hw_reg_get_length(op->module);
 
 	mem = iomem_map(addr, size, NULL);
 	if (mem == NULL) {
@@ -1179,7 +1173,7 @@ int main(int argc, char **argv)
 		ret = -EINVAL;
 		goto __exit;
 	}
-	hw_mlc_set_base(op->module, mem);
+	hw_reg_set_base(op->module, mem);
 
 	op->addr = addr;
 	op->mem = mem;
