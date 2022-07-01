@@ -21,7 +21,8 @@ WARN_CFLAGS = \
 	-Wno-long-long \
 	-Winline \
 	-Wshadow \
-	-Wno-missing-field-initializers
+	-Wno-missing-field-initializers \
+	-Wno-int-to-pointer-cast
 
 AM_CFLAGS = \
 	$(WARN_CFLAGS) \

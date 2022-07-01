@@ -224,7 +224,6 @@ struct bo *util_bo_create_image(int fd, unsigned int fourcc,
 				  planes[0], width, height, pitches[0],
 				  bpp, image->offset);
 
-
 	bo_unmap(bo);
 
 	return bo;

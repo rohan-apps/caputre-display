@@ -27,7 +27,7 @@ void *iomem_map(const void *addr, size_t length, void *mapped)
 		   fd, (off_t)physical);
 	if (mem == MAP_FAILED) {
 		fprintf(stderr, "Fail map addr 0x%x length %d",
-			physical, length);
+			(unsigned int)physical, (int)length);
 		perror(" - erro");
 		close(fd);
 		return mem;

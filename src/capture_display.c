@@ -225,8 +225,8 @@ static void print_mlc(int module, struct mlc_reg *r)
 		_getbits(r->mlccontrolt,  1, 1) ? "ON" : "OFF",
 		_getbits(r->mlccontrolt,  0, 1) ? "interalace" : "progressive");
 	fprintf(stdout, " screen:%dx%d, bgcolor:0x%x\n",
-		_getbits(r->mlcscreensize,  0, 12),
-		_getbits(r->mlcscreensize, 16, 12),
+		_getbits(r->mlcscreensize,  0, 12) + 1,
+		_getbits(r->mlcscreensize, 16, 12) + 1,
 		_getbits(r->mlcbgcolor, 0, 24));
 
 	for (i = 0; i < 2; i++) {

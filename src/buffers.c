@@ -237,7 +237,7 @@ struct bo *bo_create_dumb(int fd, unsigned int width, unsigned int height,
 	bo->pitch = arg.pitch;
 
 	fprintf(stdout, "bo fd.%d, %d x %d, %dbpp -> pitch:%d size:%d\n",
-		bo->fd, width, height, bpp, bo->pitch, bo->size);
+		bo->fd, width, height, bpp, (int)bo->pitch, (int)bo->size);
 	return bo;
 }
 
