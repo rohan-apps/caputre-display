@@ -1072,7 +1072,7 @@ static int parse_arg(char *arg, struct op_arg *op)
 
 	arg = end +  1;
 	op->layer = strtoul(arg, &end, 10);
-	if (op->layer >= hw_reg_get_layer_num(op->module)) {
+	if ((int)op->layer >= hw_reg_get_layer_num(op->module)) {
 		fprintf(stderr, "Fail, not support module.%d - layer.%d\n",
 			op->module, op->layer);
 		return -EINVAL;
@@ -1178,7 +1178,7 @@ int main(int argc, char **argv)
 	op->addr = addr;
 	op->mem = mem;
 
-	fprintf(stdout, "reg mlc %p -> %p %dbyte\n", addr, mem, size);
+	fprintf(stdout, "reg mlc %p -> %p %dbyte\n", addr, mem, (int)size);
 
 	switch (op->mode) {
 	case op_mode_print:

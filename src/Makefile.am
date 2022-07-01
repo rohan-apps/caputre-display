@@ -33,14 +33,16 @@ AM_CFLAGS = \
 	-g -O2 \
 	-I${includedir}/drm
 
-AM_CFLAGS += -static
-
 UTIL_SOURCES = iomap.c
 DRMKMS_SOURCES = kms.c buffers.c format.c image.c
 DEVICE_SOURCES = mlc.c
 
-#capture_display_LDADD = -ldrm 
-capture_display_LDADD = libdrm-arm.a -lm
+if STATIC
+AM_CFLAGS += -static
+capture_display_LDADD = libdrm-$(LIBDRM_ARCH).a -lm
+else
+capture_display_LDADD = -ldrm
+endif
 
 capture_display_SOURCES = capture_display.c $(DEVICE_SOURCES) $(UTIL_SOURCES) $(DRMKMS_SOURCES)
 bin_PROGRAMS = capture-display
