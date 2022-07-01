@@ -7,8 +7,14 @@
 - You can use the SDK provided by buildroot or yocto.
 
 ### configuration
-
- $ ./autogen.sh --target=arm-linux-gnueabihf --host=arm-linux-gnueabihf --prefix=/usr --exec-prefix=/usr
+ - for ARM static  
+ $ ./autogen.sh --target=arm-linux-gnueabihf --host=arm-linux-gnueabihf --prefix=/usr --exec-prefix=/usr --enable-static=yes --enable-arch=arm  
+ - for ARM shared  
+ $ ./autogen.sh --target=arm-linux-gnueabihf --host=arm-linux-gnueabihf --prefix=/usr --exec-prefix=/usr --enable-arch=arm 
+   
+ - for X86 shared   
+ $ sudo apt install libdrm-dev  
+ $ ./autogen.sh --includedir=/usr/include
 
 ### build
  $ make
